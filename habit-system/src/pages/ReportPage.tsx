@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
-import { resetPromotionMockData } from "../lib/mockStorage";
-import { useHabitToast } from "../context/HabitToastContext";
 import {
   Area,
   AreaChart,
@@ -264,8 +262,7 @@ function formatAmount(r: LedgerRow): string {
 
 export function ReportPage() {
   const { t, lang } = useLanguage();
-  const { showAI, isPromotionOffline } = useAppConfig();
-  const { toast } = useHabitToast();
+  const { showAI } = useAppConfig();
   const { sleepSeries, pointsSeries } = useMockData(lang);
   const chartLabelByKey = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
   const end = todayIsoLocal();
@@ -437,30 +434,6 @@ export function ReportPage() {
           </p>
         ) : null}
       </div>
-
-      {isPromotionOffline ? (
-        <div
-          className="habit-row-card"
-          style={{ padding: 14, marginBottom: 16, border: "1px dashed color-mix(in srgb, var(--color-primary) 35%, #e5e7eb)" }}
-        >
-          <h2 className="habit-section-title" style={{ marginTop: 0, marginBottom: 6 }}>
-            {t("promo.resetTitle")}
-          </h2>
-          <p className="habit-muted" style={{ fontSize: 13, marginBottom: 10 }}>
-            {t("promo.resetBody")}
-          </p>
-          <button
-            type="button"
-            className="habit-btn habit-btn--secondary"
-            onClick={() => {
-              resetPromotionMockData(lang);
-              toast({ title: t("promo.resetDone"), points: 0, tone: "default" });
-            }}
-          >
-            {t("promo.resetButton")}
-          </button>
-        </div>
-      ) : null}
 
       <p className="habit-muted" style={{ fontSize: 13, marginBottom: 20 }}>
         {t("report.footer")}{" "}
