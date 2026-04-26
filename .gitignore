@@ -33,3 +33,18 @@ yarn-error.log*
 
 # 私人材料（不推送到远程）
 简历修改/
+
+# 根目录「英文 To-do List」子项目：本地保留，不纳入本仓库（远程仅维护 habit-system/）
+/src/
+/server/
+/index.html
+/vite.config.ts
+/package.json
+/package-lock.json
+/tailwind.config.js
+/postcss.config.js
+/tsconfig.json
+/tsconfig.node.json
+/README.md
+/.env.example
+/data/
