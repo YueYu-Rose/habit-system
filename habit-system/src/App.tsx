@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { PromotionLocaleSync } from "./components/PromotionLocaleSync";
 import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
@@ -21,10 +22,13 @@ export default function App() {
 
   if (showAuth && !isLoggedIn) {
     return (
-      <Routes>
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
+      <>
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </Routes>
+        <Analytics />
+      </>
     );
   }
 
@@ -47,6 +51,7 @@ export default function App() {
         <Route path="/mainline" element={<Navigate to="/me/mainline" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Analytics />
     </Layout>
   );
 }
