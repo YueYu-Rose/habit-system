@@ -18,6 +18,7 @@ import {
   type MainlineLoopState,
 } from "../lib/mainlineLoopStorage";
 import { setExternalTaskCompleteHandler, type ExternalTaskCompletePayload } from "../lib/externalTaskBridge";
+import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 
 type MainlineLoopContextValue = {
   state: MainlineLoopState;
@@ -40,6 +41,12 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setState(loadMainlineLoopState());
+  }, []);
+
+  useEffect(() => {
+    const h = () => setState(loadMainlineLoopState());
+    window.addEventListener(REMOTE_DATA_EVENT, h);
+    return () => window.removeEventListener(REMOTE_DATA_EVENT, h);
   }, []);
 
   const getEffectiveAvailable = useCallback(

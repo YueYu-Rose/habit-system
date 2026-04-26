@@ -1,4 +1,5 @@
-const STORAGE_KEY = "habit_mainline_loop_v1";
+export const MAINLINE_LOOP_STORAGE_KEY = "habit_mainline_loop_v1";
+const STORAGE_KEY = MAINLINE_LOOP_STORAGE_KEY;
 
 export type MainlineCurrent = {
   name: string;
@@ -66,6 +67,7 @@ export function loadMainlineLoopState(): MainlineLoopState {
 export function saveMainlineLoopState(next: MainlineLoopState): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  queueMicrotask(() => void import("./userDataRemote").then((m) => m.schedulePushMainlineState(next)));
 }
 
 export function newArchivedId(): string {

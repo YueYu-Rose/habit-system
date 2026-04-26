@@ -18,7 +18,17 @@ function GuardedRoute({ allow, element }: { allow: boolean; element: JSX.Element
 
 export default function App() {
   const { showAuth, isPromotionOffline } = useAppConfig();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthResolving } = useAuth();
+
+  if (showAuth && isAuthResolving) {
+    return (
+      <div className="habit-auth-page" style={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
+        <p className="habit-muted" style={{ fontSize: 14 }}>
+          Loading…
+        </p>
+      </div>
+    );
+  }
 
   if (showAuth && !isLoggedIn) {
     return (

@@ -152,6 +152,11 @@ export const EN: Record<TransKey, string> = {
   "rewards.btn.saveEdit": "Save changes",
   "rewards.btn.delete": "Delete reward",
   "report.lead": "Scroll for charts and the last 30 days of points",
+  "report.coachLead": "We summarise 7 days of on-device check-ins, then you can get **English** AI coach advice (Markdown) in one tap.",
+  "report.coachButton": "AI Coach Analysis",
+  "report.coachLoading": "Summoning the coach…",
+  "report.coachNoKey": "Set VITE_AI_API_KEY to call a live model. Personal mode will not use the built-in mock when the key is missing.",
+  "report.coachPromoTag": "Promo: works without a key (mock)",
   "report.ai.title": "AI weekly insight",
   "report.ai.body":
     "From the last 7 days: you invested the most in your internship / job search — great focus. Your sleep is uneven; try putting your phone down before 11pm tonight.",

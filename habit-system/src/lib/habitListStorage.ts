@@ -1,7 +1,8 @@
 import { todayIsoLocal } from "./dateLocal";
 import { readPromotionUiLang } from "./promotionUiLang";
 
-const KEY = "habit_checkin_catalog_v1";
+export const HABIT_CATALOG_STORAGE_KEY = "habit_checkin_catalog_v1";
+const KEY = HABIT_CATALOG_STORAGE_KEY;
 
 function isPromotionBuild(): boolean {
   return String(import.meta.env.VITE_APP_MODE ?? "PERSONAL").toUpperCase() === "PROMOTION";
@@ -104,6 +105,7 @@ export function loadHabitCatalog(): HabitCatalogState {
 export function saveHabitCatalog(s: HabitCatalogState): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(KEY, JSON.stringify(s));
+  queueMicrotask(() => void import("./userDataRemote").then((m) => m.schedulePushHabitCatalog(s)));
 }
 
 export function newHabitId(): string {

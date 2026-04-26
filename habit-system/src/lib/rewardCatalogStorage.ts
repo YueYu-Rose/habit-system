@@ -1,6 +1,7 @@
 import { readPromotionUiLang } from "./promotionUiLang";
 
-const STORAGE_KEY = "habit_rewards_catalog_v1";
+export const REWARD_CATALOG_STORAGE_KEY = "habit_rewards_catalog_v1";
+const STORAGE_KEY = REWARD_CATALOG_STORAGE_KEY;
 
 function isPromotionBuild(): boolean {
   return String(import.meta.env.VITE_APP_MODE ?? "PERSONAL").toUpperCase() === "PROMOTION";
@@ -90,7 +91,9 @@ export function loadRewardCatalog(): RewardCatalogItem[] {
 
 export function saveRewardCatalog(rows: RewardCatalogItem[]): void {
   if (typeof localStorage === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows.map(normalizeRow)));
+  const normalized = rows.map(normalizeRow);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+  queueMicrotask(() => void import("./userDataRemote").then((m) => m.schedulePushRewardRows(normalized)));
 }
 
 export function nextRewardId(rows: RewardCatalogItem[]): number {

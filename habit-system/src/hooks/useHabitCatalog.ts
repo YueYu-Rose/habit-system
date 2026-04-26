@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 import {
   type HabitCatalogState,
   type HabitDef,
@@ -117,6 +118,12 @@ export function useHabitCatalog() {
   const reload = useCallback(() => {
     setCatalog(loadHabitCatalog());
   }, []);
+
+  useEffect(() => {
+    const h = () => reload();
+    window.addEventListener(REMOTE_DATA_EVENT, h);
+    return () => window.removeEventListener(REMOTE_DATA_EVENT, h);
+  }, [reload]);
 
   return {
     catalog,

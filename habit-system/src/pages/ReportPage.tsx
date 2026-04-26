@@ -5,6 +5,7 @@ import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
 import { resetPromotionMockData } from "../lib/mockStorage";
 import { useHabitToast } from "../context/HabitToastContext";
+import { AiCoachBlock } from "../components/AiCoachBlock";
 import {
   Area,
   AreaChart,
@@ -296,6 +297,8 @@ export function ReportPage() {
   return (
     <>
       <p className="habit-muted habit-page-lead">{t("report.lead")}</p>
+
+      <AiCoachBlock />
 
       {showAI ? (
         <div className="habit-ai-insight-card">
