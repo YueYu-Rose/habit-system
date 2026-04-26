@@ -150,11 +150,6 @@ export const ZH = {
   "rewards.btn.saveEdit": "保存修改",
   "rewards.btn.delete": "删除此奖励",
   "report.lead": "复盘 · 向下滑动查看图表与近 30 天流水",
-  "report.coachLead": "将过去 7 天本机打卡整理为摘要，一键生成 **英文** AI 教练建议（Markdown）。",
-  "report.coachButton": "AI Coach Analysis",
-  "report.coachLoading": "正在召唤习惯教练…",
-  "report.coachNoKey": "请配置 VITE_AI_API_KEY 以调用真实模型。个人版未配置时无法请求接口。",
-  "report.coachPromoTag": "推广版可零 Key 演示",
   "report.ai.title": "AI 周度洞察",
   "report.ai.body":
     "根据你近 7 天的数据：你在「找实习」主线上投入了最多精力，表现出色！但睡眠曲线波动较大，建议今晚 23:00 前放下手机，早点休息。",

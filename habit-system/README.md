@@ -52,15 +52,17 @@ That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* t
 - **Client:** **React 18** + **TypeScript** + **Vite** (fast HMR, lean production build).  
 - **Styling:** A dedicated **`habit.css` design system** (tokens, “device” layout, high-frequency check-in affordances); **Tailwind**-style utility workflow can be layered where `tailwind.config` is fully wired.  
 - **Data (offline-first):** **LocalStorage** for habit catalog, check-in state, reward catalog, mainline pool, and seed data for the **PROMOTION** build — *no network required* for the core loop on the demo.  
-- **AI:** `VITE_AI_API_KEY` + **OpenAI-compatible** `chat/completions` (OpenAI, DeepSeek, or any compatible base URL); **mock coach** when keys are absent in promotion mode.  
+- **Sync (optional):** **Supabase** for auth and cloud storage when `VITE_SUPABASE_*` is set.  
 - **Optional backend (personal build):** Express + SQLite under `server/` for a fuller ledger when running locally (see scripts in this repo).
 
 ```text
-┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   Vite UI   │────▶│  LocalStorage    │     │  AI Coach   │
-│  (Habits,   │     │  (check-ins,     │────▶│  (LLM API / │
-│  rewards)   │     │  rewards, meta)  │     │   mock)     │
-└─────────────┘     └──────────────────┘     └─────────────┘
+┌─────────────┐     ┌──────────────────┐
+│   Vite UI   │────▶│  LocalStorage    │
+│  (Habits,   │     │  (check-ins,     │
+│  rewards)   │     │  rewards, meta)  │
+└─────────────┘     └──────────────────┘
+         │                    │
+         └────────────────────┴──▶ Supabase (auth / sync) when configured
 ```
 
 ---
@@ -70,7 +72,7 @@ That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* t
 | Mode | Intent | Engineering behaviour |
 |------|--------|------------------------|
 | **`PERSONAL`** | Day-to-day use with full feature surface (auth, external integrations where applicable). | May expect API base URL, backend, etc. No mock-only shortcuts unless configured. |
-| **`PROMOTION`** | **Portfolio** on Vercel: **no** dependency on a local API for core flows. | **Offline-first** habits, rewards, and seeds; **AI Coach** can run on **mock** content when `VITE_AI_API_KEY` is missing so clicks always produce a “wow” response. |
+| **`PROMOTION`** | **Portfolio / interview demo** on Vercel: **no** dependency on a local API for core flows. | **Offline-first** habits, rewards, and seeds. |
 
 Switch via **`VITE_APP_MODE`** at **build time** (Vite embeds it). This is a deliberate **separation of concerns**: one codebase, two *deployables*, minimal `#ifdef`-style branching — the kind of **config-driven** thinking hiring managers look for in product-minded engineers.
 
@@ -96,14 +98,13 @@ npm run dev
 - Open the local URL Vite prints (commonly `http://localhost:5174`).  
 - **Production-like promotion build (optional):** `npm run build:promo` (uses Vite `production` mode; align with your `VITE_APP_MODE` and env files).
 
-**Environment (minimal for AI Coach in production / Vercel):**
+**Environment (Vercel / local):**
 
 | Variable | Notes |
 |----------|--------|
 | `VITE_APP_MODE` | `PROMOTION` or `PERSONAL` |
-| `VITE_AI_API_KEY` | Optional in promotion (mock used if empty) |
-| `VITE_AI_BASE_URL` | e.g. `https://api.openai.com/v1` or `https://api.deepseek.com/v1` |
-| `VITE_AI_MODEL` | e.g. `gpt-4o-mini` or `deepseek-chat` |
+| `VITE_SUPABASE_URL` | Optional; when set, enables Supabase auth and sync |
+| `VITE_SUPABASE_ANON_KEY` | Public anon key from Supabase project settings |
 
 > *"If it’s not in `env`, it’s not a secret. If it’s in the repo, it’s public."* — treat keys accordingly.
 
