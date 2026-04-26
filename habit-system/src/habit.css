@@ -1,0 +1,2172 @@
+@import "./theme/habit-tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--habit-bg-page);
+  color: var(--habit-text);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ========== Mobile-first：桌面端模拟 iPhone 14/15 Pro 视口 ========== */
+.habit-device-stage {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--habit-bg-page);
+}
+
+.habit-device-frame {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.habit-device-island {
+  display: none;
+}
+
+.habit-device-screen {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.habit-app {
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 14px 14px 96px;
+}
+
+/* FAB / 抽屉等悬浮层挂载点：限制在手机壳 .habit-app 内，不溢出视口 */
+/* 高于主导航，低于 Toast：抽屉 / FAB 在手机壳内；Toast 仍保持最顶层反馈 */
+.habit-overlay-root {
+  position: absolute;
+  inset: 0;
+  z-index: 125;
+  pointer-events: none;
+}
+
+.habit-overlay-root > * {
+  pointer-events: auto;
+}
+
+.habit-header {
+  margin-bottom: 18px;
+}
+
+.habit-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.habit-header__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.habit-lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--habit-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--habit-surface);
+}
+
+.habit-lang-switch__btn {
+  border: none;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--habit-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.habit-lang-switch__btn--on {
+  background: var(--theme-primary-soft);
+  color: var(--theme-accent-text);
+  font-weight: 600;
+}
+
+.habit-theme-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.habit-theme-switcher__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  border: 1px solid var(--habit-border);
+  border-radius: 8px;
+  background: var(--habit-surface);
+  color: var(--habit-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  touch-action: manipulation;
+}
+
+.habit-theme-switcher__btn--active {
+  border-color: var(--theme-primary);
+  color: var(--theme-accent-text);
+  background: var(--theme-primary-soft);
+  font-weight: 600;
+}
+
+.habit-theme-switcher__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.habit-brand {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--theme-accent-text);
+}
+
+.habit-tagline {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: var(--habit-text-secondary);
+  font-weight: 400;
+}
+
+.habit-main {
+  padding-bottom: 8px;
+}
+
+.habit-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px calc(12px + env(safe-area-inset-bottom));
+  background: var(--habit-nav-bar-bg);
+  box-shadow: 0 -1px 0 var(--habit-nav-bar-border);
+  z-index: 50;
+}
+
+.habit-me-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-nav-link {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 2px;
+  font-size: 0.72rem;
+  color: var(--habit-text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  touch-action: manipulation;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.habit-nav-link:hover {
+  color: var(--habit-text);
+  background: var(--habit-surface-muted);
+}
+
+.habit-nav-link--active {
+  color: var(--theme-accent-text);
+  background: var(--theme-nav-active-bg, var(--theme-primary-soft));
+  font-weight: 600;
+}
+
+.habit-card {
+  background: var(--habit-surface);
+  border: 1px solid var(--habit-border);
+  border-radius: var(--habit-radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--habit-shadow-card);
+}
+
+.habit-card__title {
+  margin: 0 0 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--habit-text-secondary);
+}
+
+.habit-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.habit-stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.habit-stat-label {
+  color: var(--habit-text-secondary);
+  font-size: 0.9rem;
+}
+
+.habit-stat-value {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-accent-text);
+}
+
+.habit-stat-value--pos {
+  color: var(--habit-positive);
+}
+
+.habit-stat-value--neg {
+  color: var(--habit-negative);
+}
+
+.habit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--habit-radius);
+  cursor: pointer;
+  font-family: inherit;
+  /* 主按钮：跟随当前主题主色；文字用 on-primary（= 渐变最浅格 efficiency-1） */
+  background: var(--theme-primary);
+  color: var(--theme-on-primary);
+  margin-top: 8px;
+  touch-action: manipulation;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-primary) 28%, transparent);
+  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, transform 0.08s ease;
+}
+
+.habit-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.habit-btn:hover:not(:disabled) {
+  background: var(--theme-primary-hover);
+}
+
+.habit-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--theme-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.habit-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* 主按钮不可用：置灰（奖励兑换等） */
+.habit-btn:not(.habit-btn--secondary):not(.habit-btn--ghost):disabled {
+  opacity: 1;
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  box-shadow: none !important;
+  transform: none;
+}
+
+.habit-btn:not(.habit-btn--secondary):not(.habit-btn--ghost):disabled:hover {
+  background: #e5e7eb !important;
+}
+
+.habit-btn--secondary:disabled,
+.habit-btn--ghost:disabled {
+  opacity: 0.5;
+}
+
+.habit-btn--secondary {
+  background: var(--habit-surface);
+  color: var(--habit-text);
+  border: 1px solid var(--habit-border);
+}
+
+.habit-btn--secondary:hover:not(:disabled) {
+  background: var(--habit-surface-muted);
+}
+
+.habit-btn--ghost {
+  background: transparent;
+  color: var(--theme-accent-text);
+  border: 1px solid var(--habit-border);
+}
+
+.habit-btn--ghost:hover:not(:disabled) {
+  background: var(--theme-primary-soft);
+}
+
+/* 仅用于用户指定的少数按钮：保持白字 */
+.habit-btn--force-white {
+  color: #ffffff !important;
+}
+
+.habit-section-title {
+  font-size: 1.02rem;
+  font-weight: 650;
+  margin: 18px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--habit-border);
+  color: var(--theme-accent-text);
+  letter-spacing: 0.02em;
+}
+
+.habit-page-lead {
+  margin-bottom: 6px;
+}
+
+.habit-card-lead {
+  margin-top: 0;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.habit-card-lead--flush {
+  margin: 0;
+}
+
+.habit-btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.habit-btn-stack .habit-btn {
+  margin-top: 0;
+}
+
+.habit-btn-stack .habit-btn + .habit-btn {
+  margin-top: 10px;
+}
+
+.habit-form-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--habit-border);
+}
+
+.habit-form-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--habit-text);
+  font-size: 0.9rem;
+}
+
+/* 任务页：扁平卡片栈（无盒中盒分割线） */
+.habit-task-stack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-task-row {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.habit-task-row .habit-task-meta {
+  margin-top: 6px;
+}
+
+.habit-task-row .habit-task-actions {
+  margin-top: 14px;
+}
+
+/* 兼容旧类名（若仍有引用） */
+.habit-task-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-task-item {
+  padding: 16px;
+  border-bottom: none;
+}
+
+.habit-task-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.habit-task-name {
+  font-weight: 650;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--habit-text);
+}
+
+.habit-task-meta {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--habit-text-secondary);
+  line-height: 1.45;
+}
+
+.habit-task-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (min-width: 380px) {
+  .habit-task-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.habit-task-actions .habit-btn {
+  margin-top: 0;
+}
+
+.habit-toast {
+  margin-top: 12px;
+}
+
+/* ==========================================================================
+ * Habit Toast — 打卡/操作反馈浮层
+ * - 移动端：position: fixed，相对视口，停在底部导航栏上方 ~20px
+ * - 桌面端：position: absolute（在 .habit-app 手机壳内），永远不溢出到页面
+ * ========================================================================== */
+.habit-toast-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + 20px + env(safe-area-inset-bottom, 0px));
+  z-index: 220;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px;
+}
+
+.habit-toast-layer--top {
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+
+.habit-toast-pill {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(51, 51, 51, 0.92); /* #333333 @ 92% */
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  text-align: center;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow:
+    0 12px 28px rgba(12, 12, 16, 0.32),
+    0 2px 6px rgba(12, 12, 16, 0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: habit-toast-in 220ms ease-out both;
+}
+
+.habit-toast-pill--ai {
+  background: rgba(255, 255, 255, 0.82);
+  color: #111827;
+  border: 1px solid #f3f4f6;
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.12),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 扣分/撤销：白底 + 酒红字 + 浅红晕，避免深底深字 */
+.habit-toast-pill--negative-light {
+  background: #ffffff !important;
+  color: var(--habit-wine);
+  border: 1px solid color-mix(in srgb, var(--habit-wine) 22%, #fecaca);
+  box-shadow:
+    0 8px 24px rgba(158, 42, 43, 0.12),
+    0 2px 8px rgba(158, 42, 43, 0.08);
+  backdrop-filter: none;
+}
+
+.habit-toast-title--neg-light {
+  color: var(--habit-wine) !important;
+  font-weight: 700;
+}
+
+.habit-toast-points--neg-light {
+  color: #e11d48 !important;
+  font-weight: 800;
+}
+
+.habit-toast-title {
+  color: #ffffff;
+}
+
+.habit-toast-title--ai {
+  color: #111827;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.habit-toast-title__spark {
+  color: var(--color-primary);
+}
+
+/* 扣分时事项名 & 分数均以酒红色高亮（在深灰底上视觉温和的警示） */
+.habit-toast-text--wine {
+  color: var(--habit-wine);
+}
+
+.habit-toast-points {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.habit-toast-points--positive {
+  color: var(--habit-emerald);
+}
+
+.habit-toast-points--negative {
+  color: var(--habit-wine);
+}
+
+.habit-toast-points--default {
+  color: #ffffff;
+  opacity: 0.82;
+}
+
+.habit-toast-action {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.habit-toast-action--neg-light {
+  color: #be123c;
+}
+
+@keyframes habit-toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-toast-pill {
+    animation: none;
+  }
+}
+
+.habit-muted {
+  color: var(--habit-text-secondary);
+  font-size: 0.88rem;
+}
+
+.habit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.habit-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--habit-border);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  word-break: break-word;
+  color: var(--habit-text);
+}
+
+.habit-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--theme-badge-bg);
+  color: var(--theme-badge-text);
+  border: 1px solid var(--theme-badge-border);
+}
+
+.habit-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--habit-border);
+  background: var(--habit-surface-muted);
+  color: var(--habit-text);
+  font-size: 1rem;
+  margin-top: 8px;
+  font-family: inherit;
+}
+
+.habit-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--theme-primary) 45%, var(--habit-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 18%, transparent);
+}
+
+.habit-error {
+  color: var(--habit-negative);
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+.habit-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.habit-grid-2 .habit-btn {
+  margin-top: 0;
+}
+
+.habit-reward-card .habit-btn {
+  margin-top: 12px;
+}
+
+.habit-reward-title {
+  font-weight: 650;
+  line-height: 1.35;
+  padding-right: 8px;
+  color: var(--habit-text);
+}
+
+/* 首页 / 主线：进度条（填充 = 主题 efficiency 渐变） */
+.habit-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--theme-progress-track);
+  overflow: hidden;
+}
+
+/*
+ * 填充条宽度小于 100% 时，若不拉伸 background-size，渐变只映射在窄条上，
+ * 视觉上几乎只剩最浅几格。用 --fill-pct（与 width 百分比一致）把渐变按整条轨道展开。
+ */
+.habit-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: transparent;
+  background-image: var(--theme-progress-fill-gradient);
+  background-repeat: no-repeat;
+  background-position: left center;
+  /* 100% / (pct/100) ⇒ 背景宽度 = 整条轨道，与父级同宽对齐 */
+  background-size: calc(100% / (max(1, var(--fill-pct, 100)) / 100));
+  transition: width 0.25s ease;
+}
+
+/* 主线标题（与卡片内重点一致） */
+.habit-mainline-title {
+  margin: 0 0 10px;
+  font-weight: 650;
+  font-size: 1.05rem;
+  color: var(--habit-text);
+  line-height: 1.35;
+}
+
+.habit-mainline-note {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--habit-text-secondary);
+}
+
+/* Link 伪装按钮时的间距，避免内联 style */
+.habit-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  text-decoration: none;
+}
+
+/* 记录页：流水层级 */
+.habit-ledger-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--habit-border);
+}
+
+.habit-ledger-item:last-child {
+  border-bottom: none;
+}
+
+.habit-ledger-item__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.habit-ledger-item__date {
+  font-size: 0.8rem;
+  color: var(--habit-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-ledger-item__amount {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+}
+
+.habit-ledger-item__title {
+  margin-top: 6px;
+  font-size: 0.94rem;
+  color: var(--habit-text);
+  line-height: 1.4;
+}
+
+.habit-ledger-item__meta {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--habit-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.habit-redeem-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--habit-text);
+}
+
+.habit-redeem-row .habit-redeem-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--habit-text-secondary);
+}
+
+.habit-ledger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .habit-app {
+    padding: 24px 24px 96px;
+  }
+}
+
+/* ==========================================================================
+ * 桌面端「iPhone 外壳」覆盖层
+ * 放在文件末尾以确保在源码顺序上覆盖 .habit-bottom-nav / .habit-app 的默认值。
+ * Dynamic Island 位于 top:13px / height:30px，内容区顶部留出 56px 作为安全区。
+ * ========================================================================== */
+@media (min-width: 769px) {
+  body:has(.habit-device-stage) {
+    overflow: hidden;
+  }
+
+  .habit-device-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: color-mix(in srgb, var(--habit-bg-page) 72%, #dedbd6);
+  }
+
+  .habit-device-frame {
+    box-sizing: border-box;
+    /* 锁定 iPhone 14/15 Pro 尺寸：外框 417×876（内屏约 393×852，含 12px 黑边）。
+       高度上限 90vh 以适配矮窗口；宽度恒定不随窗口拉伸。 */
+    width: 417px;
+    max-width: 417px;
+    min-width: 0;
+    flex-basis: 417px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    height: min(876px, 90vh);
+    max-height: 90vh;
+    min-height: 0;
+    margin: 0;
+    border: 12px solid #111;
+    border-radius: 40px;
+    box-shadow:
+      0 28px 60px rgba(12, 12, 16, 0.32),
+      0 10px 24px rgba(12, 12, 16, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+
+  .habit-device-island {
+    display: block;
+    position: absolute;
+    top: 13px;
+    left: 50%;
+    z-index: 60;
+    width: 112px;
+    height: 30px;
+    margin: 0;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: #111;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .habit-device-screen {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: 26px;
+    overflow: hidden;
+    background: var(--habit-bg-page);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .habit-app {
+    box-sizing: border-box;
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Header 被移入滚动区，由 .habit-main 的顶部 padding 预留灵动岛安全区 */
+  .habit-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 56px 14px 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .habit-main > .habit-header {
+    flex-shrink: 0;
+  }
+
+  .habit-main::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .habit-bottom-nav {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    flex-shrink: 0;
+    padding: 8px 10px 12px;
+  }
+
+  /* Toast：桌面端改为相对手机壳绝对定位，不再溢出到浏览器 */
+  .habit-toast-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(72px + 20px);
+    padding: 0 14px;
+  }
+
+  /* 抽屉遮罩与 FAB 已在全局使用 absolute + overlay-root，此处无需再覆盖 */
+}
+
+/* ==========================================================================
+ * 通用 · 扁平行卡片（纯白 + rounded-xl + 细边/淡影，消灭「盒中盒」）
+ * ========================================================================== */
+.habit-row-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* ==========================================================================
+ * 打卡页 · Check-in 单行（一层卡片：Checkbox + 文案 + 右侧分数）
+ * 已完成：整卡背景 = 当前主题渐变最浅格 efficiency-1（不用绿色）
+ * ========================================================================== */
+.habit-checkin-stack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-checkin-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  /* p-4：统一内边距与垂直居中呼吸感 */
+  padding: 16px;
+  background: #ffffff;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.habit-checkin-card--done {
+  background: var(--theme-efficiency-1);
+  border-color: color-mix(in srgb, var(--theme-efficiency-3) 55%, #f3f4f6);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.habit-checkin-card--done .habit-checkin-title {
+  color: var(--habit-text) !important;
+}
+
+.habit-checkin-card--done .habit-checkin-meta {
+  color: var(--habit-text-secondary) !important;
+  opacity: 0.95;
+}
+
+/* 文案区：无任何背景/边框/阴影，杜绝「内部灰框」 */
+.habit-checkin-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  text-align: left;
+  align-self: stretch;
+  cursor: pointer;
+  outline: none;
+}
+
+.habit-checkin-copy:focus-visible {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-primary) 38%, transparent);
+}
+
+.habit-checkin-box {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* 已完成：勾选为主题主色 */
+.habit-checkin-box--done {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: #ffffff;
+}
+
+.habit-checkin-title {
+  font-weight: 600;
+  color: var(--habit-text);
+  font-size: 0.96rem;
+  line-height: 1.3;
+}
+
+.habit-checkin-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.habit-checkin-streak {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #f97316;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  padding: 1px 7px;
+  line-height: 1.4;
+}
+
+.habit-checkin-meta {
+  font-size: 0.76rem;
+  color: var(--habit-text-secondary);
+}
+
+.habit-checkin-points {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.habit-checkin-points--pos {
+  color: var(--habit-emerald);
+}
+
+.habit-checkin-points--neg {
+  color: var(--habit-wine);
+}
+
+.habit-checkin-points--muted {
+  color: var(--habit-text-secondary);
+}
+
+.habit-checkin-points--recorded {
+  color: #8b8b95;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+/* 打卡页顶部积分条：与行卡片同一视觉语言 */
+.habit-hero-points {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 14px;
+}
+
+.habit-hero-points__value {
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--theme-accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-hero-points__label {
+  font-size: 0.78rem;
+  color: var(--habit-text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+ * 通用色类：加分 / 扣分 · 让历史记录与其它场景复用
+ * ========================================================================== */
+.habit-amount-pos {
+  color: var(--habit-emerald) !important;
+  font-weight: 700;
+}
+
+.habit-amount-neg {
+  color: var(--habit-wine) !important;
+  font-weight: 700;
+}
+
+/* 流水条目中 --pos / --neg 与主题脱钩，直接用全局绿/酒红 */
+.habit-ledger-item__amount.habit-stat-value--pos {
+  color: var(--habit-emerald);
+}
+
+.habit-ledger-item__amount.habit-stat-value--neg {
+  color: var(--habit-wine);
+}
+
+/* ==========================================================================
+ * 积分流水 · Apple Wallet 风格列表
+ * ========================================================================== */
+.habit-wallet-sheet {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.habit-wallet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.habit-wallet-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.habit-wallet-row:last-child {
+  border-bottom: none;
+}
+
+.habit-wallet-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.habit-wallet-row__title {
+  font-weight: 650;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: #111827;
+  word-break: break-word;
+}
+
+.habit-wallet-row__subtitle {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-wallet-row__amt {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  padding-top: 1px;
+}
+
+.habit-wallet-row__amt--pos {
+  color: var(--habit-emerald);
+}
+
+.habit-wallet-row__amt--neg {
+  color: var(--habit-wine);
+}
+
+/* ==========================================================================
+ * 运动打卡 · 时长药丸（单选）
+ * ========================================================================== */
+.habit-duration-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.habit-duration-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: var(--habit-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.habit-duration-pill:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--theme-primary) 35%, #e5e7eb);
+  color: var(--habit-text);
+}
+
+.habit-duration-pill--active {
+  border-color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-soft) 92%, #ffffff);
+  color: var(--theme-accent-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-primary) 22%, transparent);
+}
+
+.habit-duration-custom {
+  margin-top: 10px;
+}
+
+/* ==========================================================================
+ * FAB（悬浮新建）— 相对 #habit-overlay-root，永远在「手机壳」内
+ * 主题主色 + 白色加号 + shadow-lg 级别柔和阴影
+ * ========================================================================== */
+.habit-fab {
+  position: absolute;
+  right: 16px;
+  bottom: calc(72px + 20px + env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: none;
+  background: var(--theme-primary);
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 300;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 10px 15px -3px rgba(15, 23, 42, 0.12),
+    0 4px 6px -4px rgba(15, 23, 42, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--theme-primary) 18%, transparent);
+  z-index: 110;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.habit-fab:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* ==========================================================================
+ * 任务页 · 空状态（虚线框 + 浅灰字）
+ * ========================================================================== */
+.habit-task-empty {
+  border: 2px dashed #e5e7eb;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.habit-task-empty__text {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* ==========================================================================
+ * 底部抽屉 Bottom Sheet（新建任务）— 仅覆盖手机壳内，absolute 满屏于 overlay-root
+ * ========================================================================== */
+.habit-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: habit-sheet-bg-in 240ms ease-out both;
+}
+
+.habit-sheet-panel {
+  position: relative;
+  width: 100%;
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  animation: habit-sheet-slide-up 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+}
+
+.habit-sheet-handle-wrap {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+
+/* iOS 风格拖拽指示条 */
+.habit-sheet-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.habit-sheet-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px 8px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.habit-sheet-title--left {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--habit-text);
+}
+
+.habit-sheet-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.habit-sheet-close-text {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.habit-sheet-close-x {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-sheet-close-x:hover,
+.habit-sheet-close-text:hover {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.habit-sheet-close-icon-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.habit-sheet-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 20px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.habit-sheet-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.habit-sheet-footer {
+  flex-shrink: 0;
+  padding: 10px 20px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid #f3f4f6;
+  background: #ffffff;
+}
+
+.habit-btn--wine-ghost {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--habit-radius);
+  border: 1px solid color-mix(in srgb, var(--habit-wine) 25%, #fecaca);
+  background: color-mix(in srgb, var(--habit-wine-soft) 40%, #ffffff);
+  color: var(--habit-wine);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.habit-btn--wine-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--habit-wine-soft) 70%, #ffffff);
+}
+
+.habit-btn--danger-soft {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--habit-radius);
+  border: 1px solid #fee2e2;
+  background: color-mix(in srgb, #fef2f2 70%, transparent);
+  color: #ef4444;
+  font-size: 0.93rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.habit-btn--danger-soft:hover {
+  background: #fef2f2;
+}
+
+.habit-reward-row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.habit-reward-more {
+  border: none;
+  background: transparent;
+  color: #c4c4cc;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.habit-reward-more:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.habit-reward-edit {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  border-radius: 8px;
+  padding: 4px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.habit-reward-edit:hover {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, #ffffff);
+}
+
+/* 极简下划线输入 */
+.habit-input-minimal {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+  padding: 12px 0 10px;
+  margin-bottom: 16px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  color: var(--habit-text);
+  background: transparent;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.habit-input-minimal::placeholder {
+  color: #c4c4cc;
+}
+
+.habit-auth-page {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 10px 14px;
+}
+
+.habit-auth-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #f3f4f6;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+
+.habit-auth-title {
+  margin: 2px 0 2px;
+  font-size: 1.1rem;
+  color: var(--habit-text);
+}
+
+.habit-auth-subtitle {
+  margin: 0 0 14px;
+  color: var(--habit-text-secondary);
+  font-size: 0.86rem;
+}
+
+/* 注册 · 验证码：横向 flex，输入区占满剩余宽度，发送按钮不压缩、不换行 */
+.habit-auth-code-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.habit-auth-code-input-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.habit-input-minimal--code-row {
+  margin-bottom: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.habit-auth-code-row .habit-auth-code-send {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 36px;
+  white-space: nowrap;
+  margin-top: 0;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  align-self: flex-end;
+  box-shadow: none;
+}
+
+.habit-input-minimal:focus {
+  border-bottom-color: color-mix(in srgb, var(--theme-primary) 55%, #e5e7eb);
+}
+
+.habit-input-minimal--lightbg {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: #f9fafb;
+  border-bottom: none;
+}
+
+/* 抽屉内 · 类型药丸（与主题激活态） */
+.habit-task-kind-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.habit-task-kind-pill {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 11px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  background: #ffffff;
+  color: var(--habit-text-secondary);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.habit-task-kind-pill--active {
+  border-color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-soft) 88%, #ffffff);
+  color: var(--theme-accent-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-primary) 20%, transparent);
+}
+
+/* 分值快捷筹码 */
+.habit-point-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.habit-point-chip {
+  min-width: 52px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 650;
+  font-family: inherit;
+  color: var(--habit-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.habit-point-chip--active {
+  border-color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-soft) 90%, #ffffff);
+  color: var(--theme-accent-text);
+}
+
+.habit-form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--habit-text-secondary);
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
+
+@keyframes habit-sheet-bg-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes habit-sheet-slide-up {
+  from {
+    opacity: 0.95;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-sheet-backdrop,
+  .habit-sheet-panel {
+    animation: none;
+  }
+}
+
+/* --- 主线 · 累计制 / 弹窗 / 成就里程碑（本地） --- */
+.habit-mainline-head {
+  border-bottom: 1px solid #f0f0f2;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.habit-mainline-dual-title {
+  color: var(--habit-text);
+  font-weight: 700;
+}
+
+.habit-mainline-dual-pts {
+  color: var(--habit-text-secondary);
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.habit-mainline-total-pts {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+  line-height: 1.2;
+  margin-top: 4px;
+  letter-spacing: -0.02em;
+}
+
+.habit-mainline-openbar {
+  height: 11px;
+  border-radius: 999px;
+  background: #ececee;
+  overflow: hidden;
+  border: 1px solid #e8e8ec;
+  box-shadow: inset 0 1px 1px rgba(20, 24, 32, 0.04);
+}
+
+.habit-mainline-openbar__fill {
+  height: 100%;
+  min-width: 2%;
+  max-width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-efficiency-1) 80%, #fff),
+    var(--color-primary)
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  transition: width 0.4s ease;
+}
+
+.habit-mainline-openbar-hint {
+  text-align: right;
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 4px 0 0;
+}
+
+.habit-ml-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.habit-ml-chips .habit-point-chip {
+  min-width: 56px;
+}
+
+.habit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: rgba(15, 23, 42, 0.48);
+  animation: habit-modal-fade 0.2s ease both;
+}
+
+.habit-modal-card--celebrate {
+  max-width: 380px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
+  border: 1px solid #f0f0f2;
+}
+
+.habit-modal-title {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--habit-text);
+  text-align: center;
+}
+
+.habit-modal-body {
+  margin: 0 0 4px;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.habit-milestone-wall {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-milestone-empty {
+  margin: 0;
+  padding: 14px 12px;
+  text-align: center;
+  color: var(--habit-text-secondary);
+  font-size: 14px;
+  border: 1px dashed #e5e5e9;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.habit-milestone-empty--center {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border: none;
+  background: #f6f6f7;
+  padding: 18px 14px;
+}
+
+.habit-mainquest-honor {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f2;
+}
+
+.habit-mainquest-honor__title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #4a4a52;
+  letter-spacing: 0.02em;
+}
+
+.habit-mainquest-honor__lead {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--habit-text-secondary);
+}
+
+.habit-ai-insight-card {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, #e5e7eb);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--color-efficiency-1) 0%,
+    color-mix(in srgb, var(--color-primary) 16%, transparent) 100%
+  );
+}
+
+.habit-ai-insight-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.habit-ai-insight-card__icon {
+  font-size: 1rem;
+}
+
+.habit-ai-insight-card__title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.habit-ai-insight-card__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-primary) 44%, #111827);
+}
+
+.habit-milestone-card {
+  padding: 14px 16px 12px 18px;
+  border-radius: 12px;
+  background: linear-gradient(150deg, #fffcff 0%, #f6f4f0 100%);
+  border: 1px solid #e6dcc8;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, #d4b896) inset, 0 1px 3px rgba(20, 24, 32, 0.06);
+}
+
+.habit-milestone-card__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--habit-text);
+  margin-bottom: 4px;
+}
+
+.habit-milestone-card__sub {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.habit-milestone-card__pts {
+  font-weight: 750;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-milestone-card__date {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: 0.02em;
+}
+
+@keyframes habit-modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- 打卡页 · 编辑模式 / 删除 / 管理 --- */
+.habit-dailylog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.habit-dailylog-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--habit-border);
+  background: var(--habit-surface);
+  color: var(--habit-text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+.habit-dailylog-edit[aria-pressed="true"] {
+  border-color: var(--theme-primary);
+  color: var(--theme-accent-text);
+  background: var(--theme-primary-soft);
+}
+
+.habit-dailylog-edit__icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.habit-dailylog-wrap {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.habit-dailylog-wrap .habit-checkin-card {
+  width: 100%;
+}
+
+.habit-dailylog-ex-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.habit-dailylog-ex-inner {
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-dailylog-add {
+  width: 100%;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.habit-checkin-card--editing {
+  padding-right: 46px;
+}
+
+.habit-checkin-card--editing .habit-checkin-box,
+.habit-checkin-card--editing .habit-checkin-copy,
+.habit-checkin-card--editing .habit-checkin-points {
+  opacity: 0.88;
+}
+
+.habit-checkin-edit-overlay {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  color: #9ca3af;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+
+.habit-checkin-edit-overlay__icon {
+  font-size: 1rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.habit-checkin-edit-overlay:hover,
+.habit-checkin-edit-overlay:active {
+  color: #f87171;
+  background: #f9fafb;
+}
+
+.habit-dailylog-row--editing {
+  opacity: 0.7;
+}
+
+.habit-weekday-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.habit-weekday-pill {
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: var(--habit-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+.habit-weekday-pill--active {
+  border-color: var(--theme-primary);
+  background: var(--theme-primary-soft);
+  color: var(--theme-accent-text);
+}
+
+.habit-ex-dur-card {
+  max-width: 320px;
+  width: calc(100% - 32px);
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 18px 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f0f0f2;
+}
+
+.habit-ex-dur-title {
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--habit-text);
+  text-align: center;
+}
+
+.habit-ex-dur-hint {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  color: var(--habit-text-secondary);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.habit-ex-dur-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.habit-ex-dur-pill {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--habit-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.habit-ex-dur-pill--on {
+  border-color: var(--theme-primary);
+  background: var(--theme-primary-soft);
+  color: var(--theme-accent-text);
+}
+
+.habit-ex-dur-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.habit-ex-dur-actions .habit-btn {
+  flex: 1;
+  margin-top: 0;
+}
+

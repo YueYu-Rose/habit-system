@@ -1,0 +1,187 @@
+/**
+ * Habit system 主题 token — 与根目录 To-do `src/theme/themes.ts` 同色值（exact hex，含「淡 2 度」渐变）。
+ * 全局语义色：低饱和、柔和、有秩序（莫兰迪 / 大地色基底）；accent 仍由各 data-theme 覆盖。
+ * 组件使用 var(--habit-*)、var(--theme-*)，勿写死色值。
+ */
+
+html[data-theme] {
+  color-scheme: light;
+
+  /* ========== 全局语义色：纯白卡片 + 酒红扣分 + 清新绿加分 ========== */
+  --habit-bg-page: #ffffff;
+  --habit-surface: #ffffff;
+  --habit-surface-muted: #f6f7f8;
+  --habit-text: #2a2a2e;
+  --habit-text-secondary: #7b7b82;
+  --habit-border: #ececee;
+
+  /* 加分 · 扣分 专用色（全局 token，不随主题变化） */
+  --habit-emerald: #52d681; /* 清新绿 · 加分/正向 */
+  --habit-emerald-soft: #e4f9ec;
+  --habit-wine: #9e2a2b; /* 酒红 · 扣分/警示 */
+  --habit-wine-soft: #fbeaea;
+
+  --habit-positive: var(--habit-emerald);
+  --habit-negative: var(--habit-wine);
+
+  --habit-shadow-card: 0 1px 3px rgba(20, 24, 32, 0.04), 0 0 0 1px rgba(20, 24, 32, 0.02);
+  --habit-radius: 12px;
+
+  --habit-nav-bar-bg: #ffffff;
+  --habit-nav-bar-border: color-mix(in srgb, var(--habit-border) 80%, transparent);
+
+  --bg: var(--habit-bg-page);
+  --surface: var(--habit-surface);
+  --surface2: var(--habit-surface-muted);
+  --text: var(--habit-text);
+  --muted: var(--habit-text-secondary);
+  --border: var(--habit-border);
+  --positive: var(--habit-positive);
+  --negative: var(--habit-negative);
+  --radius: var(--habit-radius);
+
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+/* ========== Pink — Primary #EB94AD（淡 2 度）========== */
+html[data-theme="pink"] {
+  --theme-efficiency-1: #ffeff2;
+  --theme-efficiency-2: #fff6f7;
+  --theme-efficiency-3: #fedadf;
+  --theme-efficiency-4: #fcd4d9;
+  --theme-efficiency-5: #fbcdd3;
+  --theme-efficiency-6: #f9c6cd;
+  --theme-efficiency-7: #f7c0c7;
+  --theme-efficiency-8: #f5b9c1;
+  --theme-efficiency-9: #f4b2bb;
+  --theme-efficiency-10: #f2abb5;
+
+  --theme-primary: #eb94ad;
+  /* 按钮/主色文字 · 取主题渐变最浅格 efficiency-1，保持同色系高级感 */
+  --theme-on-primary: var(--theme-efficiency-1);
+  /* 与根项目命名对齐（用于图表等场景） */
+  --color-primary: var(--theme-primary);
+  --color-efficiency-1: var(--theme-efficiency-1);
+  --color-efficiency-2: var(--theme-efficiency-2);
+  --theme-accent-text: var(--theme-primary);
+  --theme-badge-bg: var(--theme-efficiency-1);
+  --theme-badge-text: var(--theme-primary);
+  --theme-badge-border: var(--theme-efficiency-3);
+
+  --theme-primary-soft: var(--theme-efficiency-1);
+  --theme-progress-track: var(--theme-efficiency-2);
+  --theme-primary-hover: var(--theme-efficiency-10);
+  --theme-nav-active-bg: color-mix(in srgb, var(--theme-primary) 14%, var(--habit-surface));
+
+  --theme-progress-fill-gradient: linear-gradient(
+    90deg,
+    var(--theme-efficiency-1),
+    var(--theme-efficiency-2),
+    var(--theme-efficiency-3),
+    var(--theme-efficiency-4),
+    var(--theme-efficiency-5),
+    var(--theme-efficiency-6),
+    var(--theme-efficiency-7),
+    var(--theme-efficiency-8),
+    var(--theme-efficiency-9),
+    var(--theme-efficiency-10)
+  );
+
+  --accent: var(--theme-primary);
+}
+
+/* ========== Blue — Primary #A3CCFB（淡 2 度）========== */
+html[data-theme="blue"] {
+  --theme-efficiency-1: #e9f7fe;
+  --theme-efficiency-2: #f3fafe;
+  --theme-efficiency-3: #cbebfc;
+  --theme-efficiency-4: #c4e4fc;
+  --theme-efficiency-5: #bcdcf4;
+  --theme-efficiency-6: #a3ccfb;
+  --theme-efficiency-7: #84bcfc;
+  --theme-efficiency-8: #2fc3fb;
+  --theme-efficiency-9: #22a9d1;
+  --theme-efficiency-10: #3172b4;
+
+  --theme-primary: #a3ccfb;
+  /* 按钮/主色文字 · 取主题渐变最浅格 efficiency-1，保持同色系高级感 */
+  --theme-on-primary: var(--theme-efficiency-1);
+  /* 与根项目命名对齐（用于图表等场景） */
+  --color-primary: var(--theme-primary);
+  --color-efficiency-1: var(--theme-efficiency-1);
+  --color-efficiency-2: var(--theme-efficiency-2);
+  --theme-accent-text: var(--theme-primary);
+  --theme-badge-bg: var(--theme-efficiency-1);
+  --theme-badge-text: var(--theme-primary);
+  --theme-badge-border: var(--theme-efficiency-3);
+
+  --theme-primary-soft: var(--theme-efficiency-1);
+  --theme-progress-track: var(--theme-efficiency-2);
+  --theme-primary-hover: var(--theme-efficiency-9);
+  --theme-nav-active-bg: color-mix(in srgb, var(--theme-primary) 14%, var(--habit-surface));
+
+  --theme-progress-fill-gradient: linear-gradient(
+    90deg,
+    var(--theme-efficiency-1),
+    var(--theme-efficiency-2),
+    var(--theme-efficiency-3),
+    var(--theme-efficiency-4),
+    var(--theme-efficiency-5),
+    var(--theme-efficiency-6),
+    var(--theme-efficiency-7),
+    var(--theme-efficiency-8),
+    var(--theme-efficiency-9),
+    var(--theme-efficiency-10)
+  );
+
+  --accent: var(--theme-primary);
+}
+
+/* ========== Purple — Primary #C7B1FF（淡 2 度）========== */
+html[data-theme="purple"] {
+  --theme-efficiency-1: #fdf4ff;
+  --theme-efficiency-2: #fef9ff;
+  --theme-efficiency-3: #fbe4ff;
+  --theme-efficiency-4: #f2daff;
+  --theme-efficiency-5: #e9cfff;
+  --theme-efficiency-6: #e3c7ff;
+  --theme-efficiency-7: #dcbfff;
+  --theme-efficiency-8: #d7b8ff;
+  --theme-efficiency-9: #d1b1ff;
+  --theme-efficiency-10: #c5a3ff;
+
+  --theme-primary: #c7b1ff;
+  /* 按钮/主色文字 · 取主题渐变最浅格 efficiency-1，保持同色系高级感 */
+  --theme-on-primary: var(--theme-efficiency-1);
+  /* 与根项目命名对齐（用于图表等场景） */
+  --color-primary: var(--theme-primary);
+  --color-efficiency-1: var(--theme-efficiency-1);
+  --color-efficiency-2: var(--theme-efficiency-2);
+  --theme-accent-text: var(--theme-primary);
+  --theme-badge-bg: var(--theme-efficiency-1);
+  --theme-badge-text: var(--theme-primary);
+  --theme-badge-border: var(--theme-efficiency-3);
+
+  --theme-primary-soft: var(--theme-efficiency-1);
+  --theme-progress-track: var(--theme-efficiency-2);
+  --theme-primary-hover: var(--theme-efficiency-10);
+  --theme-nav-active-bg: color-mix(in srgb, var(--theme-primary) 14%, var(--habit-surface));
+
+  --theme-progress-fill-gradient: linear-gradient(
+    90deg,
+    var(--theme-efficiency-1),
+    var(--theme-efficiency-2),
+    var(--theme-efficiency-3),
+    var(--theme-efficiency-4),
+    var(--theme-efficiency-5),
+    var(--theme-efficiency-6),
+    var(--theme-efficiency-7),
+    var(--theme-efficiency-8),
+    var(--theme-efficiency-9),
+    var(--theme-efficiency-10)
+  );
+
+  --accent: var(--theme-primary);
+}
