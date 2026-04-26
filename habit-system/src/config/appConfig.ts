@@ -12,6 +12,8 @@ export const appConfig = {
   showAuth: mode === "PROMOTION",
   showAI: mode === "PERSONAL",
   showExternalIntegration: mode === "PERSONAL",
+  /** 推广版无后端，打卡/习惯/奖励全部走 LocalStorage，禁止 habitFetch */
+  isPromotionOffline: mode === "PROMOTION",
 } as const;
 
 export function useAppConfig() {

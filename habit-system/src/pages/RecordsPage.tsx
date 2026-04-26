@@ -1,29 +1,16 @@
 import { useEffect, useState } from "react";
-import { habitFetch } from "../api/client";
-import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { useAppConfig } from "../config/appConfig";
-import { todayIsoLocal } from "../lib/dateLocal";
 
 export function RecordsPage() {
   const { lang, t } = useLanguage();
-  const { mode } = useAppConfig();
-  const { isLoggedIn } = useAuth();
-  const canUseApi = mode === "PROMOTION" && isLoggedIn;
   const [redemptions, setRedemptions] = useState<{ title: string; cost_points: number; redeemed_at: string }[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const locale = lang === "en" ? "en-GB" : "zh-CN";
 
   useEffect(() => {
-    if (!canUseApi) {
-      setRedemptions([]);
-      setErr(null);
-      return;
-    }
-    habitFetch<{ rows: { title: string; cost_points: number; redeemed_at: string }[] }>("/api/habit/redemptions")
-      .then((x) => setRedemptions(x.rows))
-      .catch((e) => setErr(String(e)));
-  }, [canUseApi]);
+    setRedemptions([]);
+    setErr(null);
+  }, []);
 
   return (
     <>
@@ -59,18 +46,7 @@ export function RecordsPage() {
         <button
           type="button"
           className="habit-btn habit-btn--secondary"
-          onClick={async () => {
-            if (!canUseApi) {
-              setErr(null);
-              return;
-            }
-            try {
-              await habitFetch(`/api/habit/settle/${todayIsoLocal()}`, { method: "POST" });
-              setErr(null);
-            } catch (e) {
-              setErr(String(e));
-            }
-          }}
+          onClick={() => setErr(null)}
         >
           {t("records.settle")}
         </button>

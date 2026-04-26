@@ -8,10 +8,12 @@ import { MainlineLoopProvider } from "./context/MainlineLoopContext";
 import { AuthProvider } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { appConfig } from "./config/appConfig";
+import { ensureMockSeedForPromotion } from "./lib/mockStorage";
 import { initHabitThemeOnLoad } from "./theme/habitTheme";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import "./habit.css";
 
+ensureMockSeedForPromotion();
 initHabitThemeOnLoad(appConfig.mode);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

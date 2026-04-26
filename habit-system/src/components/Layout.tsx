@@ -33,10 +33,6 @@ export function Layout({ children }: { children: ReactNode }) {
                 <div className="habit-header__top">
                   <div className="habit-header__intro">
                     <h1 className="habit-brand">{t("brand.title")}</h1>
-                    <p className="habit-header__subtitle habit-muted" style={{ margin: "2px 0 0", fontSize: 12 }}>
-                      {t("brand.subtitle")}
-                    </p>
-                    <p className="habit-tagline">{t("brand.tagline")}</p>
                   </div>
                   <div className="habit-header__tools">
                     <LanguageSwitcher />

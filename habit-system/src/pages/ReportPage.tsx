@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { habitFetch } from "../api/client";
-import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
@@ -265,8 +263,6 @@ function formatAmount(r: LedgerRow): string {
 export function ReportPage() {
   const { t, lang } = useLanguage();
   const { mode, showAI } = useAppConfig();
-  const { isLoggedIn } = useAuth();
-  const canUseApi = mode === "PROMOTION" && isLoggedIn;
   const { sleepSeries, pointsSeries } = useMockData(lang);
   const chartLabelByKey = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
   const end = todayIsoLocal();
@@ -275,16 +271,9 @@ export function ReportPage() {
   const [ledgerErr, setLedgerErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canUseApi) {
-      setLedger([]);
-      setLedgerErr(null);
-      return;
-    }
+    setLedger([]);
     setLedgerErr(null);
-    habitFetch<{ rows: LedgerRow[] }>(`/api/habit/ledger?from=${start}&to=${end}`)
-      .then((x) => setLedger(x.rows))
-      .catch((e) => setLedgerErr(String(e)));
-  }, [canUseApi, start, end]);
+  }, [start, end]);
 
   const yDomain = useMemo(() => {
     let minV = Number.POSITIVE_INFINITY;

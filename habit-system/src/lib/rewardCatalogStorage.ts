@@ -20,11 +20,11 @@ function normalizeRow(row: RewardCatalogItem): RewardCatalogItem {
   };
 }
 
-/** 推广版空库时的示范奖励（英文 tier 名与 RewardsPage 的匹配规则一致） */
+/** 推广版空库时的示范奖励（tier 与 RewardsPage 的 Instant 匹配） */
 export const defaultPromoRewardRows: RewardCatalogItem[] = [
-  { id: 1, tier: "Instant", title: "A favorite drink", cost_points: 20 },
-  { id: 2, tier: "Instant", title: "One episode of a show you like", cost_points: 15 },
-  { id: 3, tier: "Instant", title: "A short walk outside", cost_points: 10 },
+  { id: 1, tier: "Instant", title: "一杯喜欢的饮料", cost_points: 20 },
+  { id: 2, tier: "Instant", title: "看一集轻松内容", cost_points: 15 },
+  { id: 3, tier: "Instant", title: "出门散一会儿步", cost_points: 10 },
 ];
 
 export function loadRewardCatalog(): RewardCatalogItem[] {

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { habitFetch } from "../api/client";
 import { ExerciseDurationModal } from "../components/ExerciseDurationModal";
 import { NewHabitBottomSheet } from "../components/NewHabitBottomSheet";
 import { OverlayPortal } from "../components/OverlayPortal";
@@ -61,19 +60,25 @@ function buildMeta(
     return t("home.meta.ex.undone");
   }
   if (def.systemKey === "sleep") {
-    return done && daily
-      ? t("home.meta.sleep.done", { time: fmtTime(daily.sleep_started_at, timeLocale) })
-      : t("home.meta.sleep.undone");
+    if (!done) return t("home.meta.sleep.undone");
+    if (daily?.sleep_started_at) {
+      return t("home.meta.sleep.done", { time: fmtTime(daily.sleep_started_at, timeLocale) });
+    }
+    return t("home.meta.default.done");
   }
   if (def.systemKey === "wake") {
-    return done && daily
-      ? t("home.meta.wake.done", { time: fmtTime(daily.wake_at, timeLocale) })
-      : t("home.meta.wake.undone");
+    if (!done) return t("home.meta.wake.undone");
+    if (daily?.wake_at) {
+      return t("home.meta.wake.done", { time: fmtTime(daily.wake_at, timeLocale) });
+    }
+    return t("home.meta.default.done");
   }
   if (def.systemKey === "shower") {
-    return done && daily
-      ? t("home.meta.shower.done", { time: fmtTime(daily.shower_at, timeLocale) })
-      : t("home.meta.shower.undone");
+    if (!done) return t("home.meta.shower.undone");
+    if (daily?.shower_at) {
+      return t("home.meta.shower.done", { time: fmtTime(daily.shower_at, timeLocale) });
+    }
+    return t("home.meta.default.done");
   }
   if (def.penalty > 0) {
     return done
@@ -107,7 +112,6 @@ export function HomePage() {
   const { catalog, removeHabit, addHabit, toggleLocalHabit, bumpHabitStreak } = useHabitCatalog();
 
   const [d, setD] = useState<Summary | null>(null);
-  const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [ext, setExt] = useState<{ total: number; completed: number; rate: number } | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
@@ -130,18 +134,8 @@ export function HomePage() {
   }, [date, ext?.rate]);
 
   const reload = useCallback(async () => {
-    if (isPersonal) {
-      setErr(null);
-      setD(buildLocalSummary());
-      return;
-    }
-    try {
-      const x = await habitFetch<Summary>(`/api/habit/summary?date=${encodeURIComponent(date)}`);
-      setD(x);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }, [buildLocalSummary, date, isPersonal]);
+    setD(buildLocalSummary());
+  }, [buildLocalSummary]);
 
   useEffect(() => {
     void reload();
@@ -149,38 +143,6 @@ export function HomePage() {
 
   const daily = d?.habitDaily ?? null;
   const visibleHabits = catalog.items.filter((h) => isHabitDueOnWeekday(h, weekday));
-
-  const act = useCallback(
-    async (key: string, title: string, url: string, body: Record<string, unknown>) => {
-      if (busy) return;
-      if (isPersonal) return null;
-      setBusy(key);
-      setErr(null);
-      try {
-        const r = await habitFetch<{ points?: number }>(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const p = r.points ?? 0;
-        toast({
-          title,
-          points: p,
-          tone: p < 0 ? "negative" : p > 0 ? "positive" : "default",
-        });
-        await reload();
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        setErr(msg);
-        toast({ title: title + t("home.toast.failSuffix"), tone: "negative" });
-        return null;
-      } finally {
-        setBusy(null);
-      }
-      return true;
-    },
-    [busy, isPersonal, reload, t, toast]
-  );
 
   const localToggle = useCallback(
     (def: HabitDef) => {
@@ -206,108 +168,32 @@ export function HomePage() {
   const runSystemToggle = useCallback(
     (def: HabitDef) => {
       if (!def.systemKey || isEditing) return;
-      if (isPersonal) {
-        localToggle(def);
-        return;
-      }
-      if (def.systemKey === "exercise") return;
-      const done0 = getDone(def, daily, catalog, date);
-      const delta = done0 ? -1 : 1;
-      switch (def.systemKey) {
-        case "sleep":
-          if (done0) return;
-          return void (async () => {
-            const ok = await act(
-              "sleep",
-              t("home.act.sleepEarly"),
-              `/api/habit/daily/${date}/sleep-start`,
-              { at: new Date().toISOString() }
-            );
-            if (ok) bumpHabitStreak(def.id, 1);
-          })();
-        case "wake":
-          if (done0) return;
-          return void (async () => {
-            const ok = await act("wake", t("home.act.wake"), `/api/habit/daily/${date}/wake`, { at: new Date().toISOString() });
-            if (ok) bumpHabitStreak(def.id, 1);
-          })();
-        case "shower":
-          if (done0) return;
-          return void (async () => {
-            const ok = await act("shower", t("home.act.shower"), `/api/habit/daily/${date}/shower`, { at: new Date().toISOString() });
-            if (ok) bumpHabitStreak(def.id, 1);
-          })();
-        case "english": {
-          const next = !done0;
-          return void (async () => {
-            const ok = await act(
-              "english",
-              next ? t("home.act.english") : t("home.act.englishUndo"),
-              `/api/habit/daily/${date}/english`,
-              { done: next }
-            );
-            if (ok) bumpHabitStreak(def.id, delta);
-          })();
-        }
-        case "cantonese": {
-          const next = !done0;
-          return void (async () => {
-            const ok = await act(
-              "cantonese",
-              next ? t("home.act.cantonese") : t("home.act.cantoneseUndo"),
-              `/api/habit/daily/${date}/cantonese`,
-              { done: next }
-            );
-            if (ok) bumpHabitStreak(def.id, delta);
-          })();
-        }
-        default:
-      }
+      localToggle(def);
     },
-    [act, bumpHabitStreak, catalog, daily, date, isEditing, isPersonal, localToggle, t]
+    [isEditing, localToggle]
   );
 
   const runExerciseFlow = useCallback(
     (def: HabitDef) => {
       if (isEditing) return;
-      if (isPersonal) {
-        const done0 = getDone(def, daily, catalog, date);
-        if (done0) {
-          localToggle(def);
-        } else {
-          setExModal(true);
-        }
-        return;
-      }
       const done0 = getDone(def, daily, catalog, date);
       if (done0) {
-        void (async () => {
-          const ok = await act("exercise", t("home.act.exerciseUndo"), `/api/habit/daily/${date}/exercise`, { minutes: 0, done: false });
-          if (ok) bumpHabitStreak(def.id, -1);
-        })();
+        localToggle(def);
       } else {
         setExModal(true);
       }
     },
-    [act, bumpHabitStreak, catalog, daily, date, isEditing, isPersonal, localToggle, t]
+    [catalog, daily, date, isEditing, localToggle]
   );
 
   const confirmExerciseMinutes = useCallback(
-    (minutes: number) => {
-      if (isPersonal) {
-        const ex = catalog.items.find((x) => x.systemKey === "exercise");
-        if (ex && !getDone(ex, daily, catalog, date)) {
-          localToggle(ex);
-        }
-        return;
-      }
+    (_minutes: number) => {
       const ex = catalog.items.find((x) => x.systemKey === "exercise");
-      void (async () => {
-        const ok = await act("exercise", t("home.act.exercise"), `/api/habit/daily/${date}/exercise`, { minutes, done: true });
-        if (ok && ex) bumpHabitStreak(ex.id, 1);
-      })();
+      if (ex && !getDone(ex, daily, catalog, date)) {
+        localToggle(ex);
+      }
     },
-    [act, bumpHabitStreak, catalog, catalog.items, daily, date, isPersonal, localToggle, t]
+    [catalog, catalog.items, daily, date, localToggle]
   );
 
   const runLocalToggle = useCallback(
@@ -333,21 +219,7 @@ export function HomePage() {
     removeHabit(def.id);
   };
 
-  const availableDisplay = isPersonal
-    ? getEffectiveAvailable(d?.availablePoints ?? 0) + (catalog.customWallet || 0)
-    : getEffectiveAvailable(d?.availablePoints ?? 0);
-
-  if (!isPersonal && err && !d) {
-    return (
-      <div className="habit-card">
-        <p className="habit-error">
-          {t("home.error.load")}
-          {err}
-        </p>
-        <p className="habit-muted">{t("home.hint.api")}</p>
-      </div>
-    );
-  }
+  const availableDisplay = getEffectiveAvailable(d?.availablePoints ?? 0) + (catalog.customWallet || 0);
   if (!d) return <p className="habit-muted">{t("common.loading")}</p>;
 
   const extModeLabel =
@@ -473,32 +345,12 @@ export function HomePage() {
                 e.preventDefault();
                 setExtErr(null);
                 const form = new FormData(e.currentTarget);
-                const fDate = String(form.get("date") || todayIsoLocal());
                 const total = Number(form.get("total"));
                 const completed = Number(form.get("completed"));
-                void (async () => {
-                  if (isPersonal) {
-                    const rate = total > 0 ? Math.max(0, Math.min(1, completed / total)) : 0;
-                    setExt({ total, completed, rate });
-                    toast({ title: t("home.toast.rateLocal"), points: Math.round(rate * 10), tone: "positive" });
-                    setD((prev) =>
-                      prev ? { ...prev, externalTodo: { mode: "local", completionRate: rate } } : prev
-                    );
-                    return;
-                  }
-                  try {
-                    const r = await habitFetch<{ rate: number; points: number }>("/api/habit/external-todo/snapshot", {
-                      method: "POST",
-                      body: JSON.stringify({ date: fDate, total, completed }),
-                    });
-                    setExt({ total, completed, rate: r.rate });
-                    toast({ title: t("home.toast.rateOk"), points: r.points });
-                    await reload();
-                  } catch (e0) {
-                    setExtErr(String(e0));
-                    toast({ title: t("home.toast.writeFail"), tone: "negative" });
-                  }
-                })();
+                const rate = total > 0 ? Math.max(0, Math.min(1, completed / total)) : 0;
+                setExt({ total, completed, rate });
+                toast({ title: t("home.toast.rateLocal"), points: Math.round(rate * 10), tone: "positive" });
+                setD((prev) => (prev ? { ...prev, externalTodo: { mode: "local", completionRate: rate } } : prev));
               }}
             >
               <input name="date" className="habit-input" type="date" defaultValue={todayIsoLocal()} />

@@ -43,10 +43,10 @@ export const defaultHabitItemsZh: HabitDef[] = [
 
 /** 推广版 / PROMOTION 构建下的默认习惯名称（与中文条目 id / systemKey 一一对应） */
 export const defaultHabitItemsEn: HabitDef[] = [
-  { id: "def-sleep", name: "Start sleep", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
-  { id: "def-wake", name: "Got up", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
+  { id: "def-sleep", name: "Bedtime", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
+  { id: "def-wake", name: "Wake up", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
   { id: "def-shower", name: "Shower done", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
-  { id: "def-english", name: "English practice", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
+  { id: "def-english", name: "Speaking English", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
   { id: "def-cantonese", name: "Cantonese / Duolingo", completePoints: 10, penalty: 10, streak: 0, systemKey: "cantonese", schedule: { type: "daily" } },
   { id: "def-exercise", name: "Exercise", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];

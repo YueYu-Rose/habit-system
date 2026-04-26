@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { habitFetch } from "../api/client";
 import { HabitBottomSheet } from "../components/HabitBottomSheet";
 import { OverlayPortal } from "../components/OverlayPortal";
 import { useHabitToast } from "../context/HabitToastContext";
-import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
@@ -31,8 +29,6 @@ export function RewardsPage() {
   const { mode, showExternalIntegration } = useAppConfig();
   const isPromo = mode === "PROMOTION";
   const newRewardTier = isPromo ? "Instant" : "即时奖励";
-  const { isLoggedIn } = useAuth();
-  const canUseApi = mode === "PROMOTION" && isLoggedIn;
   const { getEffectiveAvailable, spendableDelta, trySpendFromLocalPool, addToLocalPool } = useMainlineLoop();
   const [rows, setRows] = useState<Reward[]>(() => loadRewardCatalog());
   const [bal, setBal] = useState<{ available: number; lifetime: number } | null>(null);
@@ -46,21 +42,9 @@ export function RewardsPage() {
   }, []);
 
   const load = useCallback(() => {
-    if (!canUseApi) {
-      setErr(null);
-      setBal({ available: 0, lifetime: 0 });
-      return;
-    }
-    habitFetch<{ rows: Reward[] }>("/api/habit/rewards")
-      .then((x) => {
-        persistRows(x.rows);
-        setErr(null);
-      })
-      .catch((e) => setErr(String(e)));
-    habitFetch<{ available: number; lifetime: number }>("/api/habit/balances")
-      .then(setBal)
-      .catch(() => {});
-  }, [canUseApi, persistRows]);
+    setErr(null);
+    setBal({ available: 0, lifetime: 0 });
+  }, []);
 
   useEffect(() => {
     load();
@@ -87,16 +71,6 @@ export function RewardsPage() {
     setErr(null);
     const api = bal?.available ?? 0;
     if (getEffectiveAvailable(api) < cost) return;
-    if (canUseApi && api >= cost) {
-      try {
-        await habitFetch("/api/habit/redeem", { method: "POST", body: JSON.stringify({ rewardId: id }) });
-        showRedeemToast(cost);
-        load();
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e));
-      }
-      return;
-    }
     if (spendableDelta >= cost) {
       if (trySpendFromLocalPool(cost)) {
         showRedeemToast(cost);
@@ -104,7 +78,7 @@ export function RewardsPage() {
       }
       return;
     }
-    setErr(showExternalIntegration && canUseApi ? t("rewards.err.mixed") : t("rewards.err.insufficient"));
+    setErr(t("rewards.err.insufficient"));
   };
 
   const openCreate = () => {
@@ -133,21 +107,6 @@ export function RewardsPage() {
       persistRows(updated);
       closeSheet();
       toast({ title: t("rewards.toast.saved"), points: 0 });
-      if (canUseApi) {
-        try {
-          await habitFetch(`/api/habit/rewards/${editingNow.id}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              title: title0,
-              cost_points: cost,
-              tier: editingNow.tier,
-            }),
-          });
-          load();
-        } catch (e) {
-          setErr(e instanceof Error ? e.message : String(e));
-        }
-      }
       return;
     }
 
@@ -161,21 +120,6 @@ export function RewardsPage() {
     persistRows(created);
     closeSheet();
     toast({ title: t("rewards.toast.added"), points: 0 });
-    if (canUseApi) {
-      try {
-        await habitFetch("/api/habit/rewards", {
-          method: "POST",
-          body: JSON.stringify({
-            title: title0,
-            cost_points: cost,
-            tier: newRewardTier,
-          }),
-        });
-        load();
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e));
-      }
-    }
   };
 
   const deleteReward = async () => {
@@ -186,14 +130,6 @@ export function RewardsPage() {
     persistRows(next);
     closeSheet();
     toast({ title: t("rewards.toast.deleted"), points: 0 });
-    if (canUseApi) {
-      try {
-        await habitFetch(`/api/habit/rewards/${target.id}`, { method: "DELETE" });
-        load();
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e));
-      }
-    }
   };
 
   const byTier = (tier: (typeof REWARD_TIERS)[number]) => rows.filter((r) => rowInTier(r, tier));
