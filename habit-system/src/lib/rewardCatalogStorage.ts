@@ -1,5 +1,9 @@
 const STORAGE_KEY = "habit_rewards_catalog_v1";
 
+function isPromotionBuild(): boolean {
+  return String(import.meta.env.VITE_APP_MODE ?? "PERSONAL").toUpperCase() === "PROMOTION";
+}
+
 export type RewardCatalogItem = {
   id: number;
   tier: string;
@@ -16,11 +20,22 @@ function normalizeRow(row: RewardCatalogItem): RewardCatalogItem {
   };
 }
 
+/** 推广版空库时的示范奖励（英文 tier 名与 RewardsPage 的匹配规则一致） */
+export const defaultPromoRewardRows: RewardCatalogItem[] = [
+  { id: 1, tier: "Instant", title: "A favorite drink", cost_points: 20 },
+  { id: 2, tier: "Instant", title: "One episode of a show you like", cost_points: 15 },
+  { id: 3, tier: "Instant", title: "A short walk outside", cost_points: 10 },
+];
+
 export function loadRewardCatalog(): RewardCatalogItem[] {
-  if (typeof localStorage === "undefined") return [];
+  if (typeof localStorage === "undefined") {
+    return isPromotionBuild() ? defaultPromoRewardRows.map((r) => ({ ...r })) : [];
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      return isPromotionBuild() ? defaultPromoRewardRows.map((r) => ({ ...r })) : [];
+    }
     const parsed = JSON.parse(raw) as RewardCatalogItem[];
     if (!Array.isArray(parsed)) return [];
     return parsed.map(normalizeRow).filter((x) => x.title.length > 0 && x.cost_points > 0);

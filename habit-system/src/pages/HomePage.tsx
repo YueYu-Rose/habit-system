@@ -333,8 +333,9 @@ export function HomePage() {
     removeHabit(def.id);
   };
 
-  const availableDisplay =
-    getEffectiveAvailable(d?.availablePoints ?? 0) + (catalog.customWallet || 0);
+  const availableDisplay = isPersonal
+    ? getEffectiveAvailable(d?.availablePoints ?? 0) + (catalog.customWallet || 0)
+    : getEffectiveAvailable(d?.availablePoints ?? 0);
 
   if (!isPersonal && err && !d) {
     return (
@@ -357,6 +358,7 @@ export function HomePage() {
       <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>
+        {isPersonal ? (
         <div className="habit-hero-points" style={{ marginBottom: 0 }}>
           <div>
             <div className="habit-hero-points__label">{t("home.available")}</div>
@@ -372,7 +374,17 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        {showExternalIntegration && (spendableDelta > 0 || (catalog.customWallet || 0) > 0) ? (
+        ) : (
+          <div className="habit-hero-points habit-hero-points--promo" style={{ marginBottom: 0 }}>
+            <div>
+              <div className="habit-hero-points__label">{t("home.available")}</div>
+              <div className="habit-hero-points__value">{availableDisplay}</div>
+            </div>
+          </div>
+        )}
+        {mode === "PERSONAL" &&
+        showExternalIntegration &&
+        (spendableDelta > 0 || (catalog.customWallet || 0) > 0) ? (
           <p className="habit-muted" style={{ margin: "4px 2px 0", fontSize: 12, textAlign: "center" }}>
             {t("home.localPoolNote", { d1: spendableDelta, d2: catalog.customWallet || 0 })}
           </p>

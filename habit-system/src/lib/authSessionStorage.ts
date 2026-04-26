@@ -3,11 +3,14 @@ const AUTH_SESSION_KEY = "habit_auth_session_v1";
 export type AuthSession = {
   loggedIn: boolean;
   email: string;
+  /** Mock 演示用 token（推广版无真实后端时写入 localStorage） */
+  token: string;
 };
 
 const empty: AuthSession = {
   loggedIn: false,
   email: "",
+  token: "",
 };
 
 export function loadAuthSession(): AuthSession {
@@ -19,6 +22,7 @@ export function loadAuthSession(): AuthSession {
     return {
       loggedIn: Boolean(parsed.loggedIn),
       email: typeof parsed.email === "string" ? parsed.email : "",
+      token: typeof (parsed as { token?: string }).token === "string" ? (parsed as { token: string }).token : "",
     };
   } catch {
     return empty;

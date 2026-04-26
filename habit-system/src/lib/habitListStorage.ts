@@ -2,6 +2,10 @@ import { todayIsoLocal } from "./dateLocal";
 
 const KEY = "habit_checkin_catalog_v1";
 
+function isPromotionBuild(): boolean {
+  return String(import.meta.env.VITE_APP_MODE ?? "PERSONAL").toUpperCase() === "PROMOTION";
+}
+
 export type HabitSystemKey = "sleep" | "wake" | "shower" | "english" | "cantonese" | "exercise";
 
 /** 出现频次：每天 或 指定星期（0=周日 … 6=周六，与 Date#getDay 一致） */
@@ -28,7 +32,7 @@ export type HabitCatalogState = {
   customWallet: number;
 };
 
-export const defaultHabitItems: HabitDef[] = [
+export const defaultHabitItemsZh: HabitDef[] = [
   { id: "def-sleep", name: "开始睡觉", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
   { id: "def-wake", name: "起床了", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
   { id: "def-shower", name: "已洗澡", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
@@ -37,9 +41,23 @@ export const defaultHabitItems: HabitDef[] = [
   { id: "def-exercise", name: "运动", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];
 
+/** 推广版 / PROMOTION 构建下的默认习惯名称（与中文条目 id / systemKey 一一对应） */
+export const defaultHabitItemsEn: HabitDef[] = [
+  { id: "def-sleep", name: "Start sleep", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
+  { id: "def-wake", name: "Got up", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
+  { id: "def-shower", name: "Shower done", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
+  { id: "def-english", name: "English practice", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
+  { id: "def-cantonese", name: "Cantonese / Duolingo", completePoints: 10, penalty: 10, streak: 0, systemKey: "cantonese", schedule: { type: "daily" } },
+  { id: "def-exercise", name: "Exercise", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
+];
+
+export function getDefaultHabitItems(): HabitDef[] {
+  return (isPromotionBuild() ? defaultHabitItemsEn : defaultHabitItemsZh).map((h) => ({ ...h }));
+}
+
 const empty = (): HabitCatalogState => ({
   v: 1,
-  items: [...defaultHabitItems],
+  items: getDefaultHabitItems(),
   customDone: {},
   customWallet: 0,
 });
@@ -60,7 +78,7 @@ function parse(raw: string | null): HabitCatalogState {
     if (j.v !== 1 || !Array.isArray(j.items)) return empty();
     if (typeof j.customDone !== "object" || j.customDone == null) j.customDone = {};
     if (typeof j.customWallet !== "number" || !Number.isFinite(j.customWallet)) j.customWallet = 0;
-    if (j.items.length === 0) j.items = [...defaultHabitItems];
+    if (j.items.length === 0) j.items = getDefaultHabitItems();
     j.items = j.items.map((x) => normalizeItem(x));
     return j;
   } catch {

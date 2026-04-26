@@ -14,17 +14,23 @@ type Reward = RewardCatalogItem;
 
 type CostPreset = 10 | 20 | 50 | "custom";
 
-const REWARD_TIERS: { id: "instant" | "restore" | "upgrade" | "mainline"; match: string }[] = [
-  { id: "instant", match: "即时奖励" },
-  { id: "restore", match: "恢复配额" },
-  { id: "upgrade", match: "升级奖励" },
-  { id: "mainline", match: "主线兑现" },
+const REWARD_TIERS: { id: "instant" | "restore" | "upgrade" | "mainline"; match: string; matchEn: string }[] = [
+  { id: "instant", match: "即时奖励", matchEn: "Instant" },
+  { id: "restore", match: "恢复配额", matchEn: "Restore" },
+  { id: "upgrade", match: "升级奖励", matchEn: "Upgrade" },
+  { id: "mainline", match: "主线兑现", matchEn: "Milestone" },
 ];
+
+function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
+  return r.tier === tier.match || r.tier === tier.matchEn;
+}
 
 export function RewardsPage() {
   const { t } = useLanguage();
   const { toast } = useHabitToast();
   const { mode, showExternalIntegration } = useAppConfig();
+  const isPromo = mode === "PROMOTION";
+  const newRewardTier = isPromo ? "Instant" : "即时奖励";
   const { isLoggedIn } = useAuth();
   const canUseApi = mode === "PROMOTION" && isLoggedIn;
   const { getEffectiveAvailable, spendableDelta, trySpendFromLocalPool, addToLocalPool } = useMainlineLoop();
@@ -98,7 +104,7 @@ export function RewardsPage() {
       }
       return;
     }
-    setErr(canUseApi ? t("rewards.err.mixed") : t("rewards.err.insufficient"));
+    setErr(showExternalIntegration && canUseApi ? t("rewards.err.mixed") : t("rewards.err.insufficient"));
   };
 
   const openCreate = () => {
@@ -149,7 +155,7 @@ export function RewardsPage() {
       id: nextRewardId(rows),
       title: title0,
       cost_points: cost,
-      tier: "即时奖励",
+      tier: newRewardTier,
     };
     const created = [row, ...rows];
     persistRows(created);
@@ -162,7 +168,7 @@ export function RewardsPage() {
           body: JSON.stringify({
             title: title0,
             cost_points: cost,
-            tier: "即时奖励",
+            tier: newRewardTier,
           }),
         });
         load();
@@ -190,7 +196,7 @@ export function RewardsPage() {
     }
   };
 
-  const byTier = (tierMatch: string) => rows.filter((r) => r.tier === tierMatch);
+  const byTier = (tier: (typeof REWARD_TIERS)[number]) => rows.filter((r) => rowInTier(r, tier));
 
   return (
     <>
@@ -212,7 +218,7 @@ export function RewardsPage() {
       {REWARD_TIERS.map((tier) => (
         <div key={tier.match}>
           <h2 className="habit-section-title">{t(`rewards.tier.${tier.id}` as TransKey)}</h2>
-          {byTier(tier.match).map((rw) => {
+          {byTier(tier).map((rw) => {
             const api = bal?.available ?? 0;
             const canRedeem = Boolean(
               bal &&

@@ -13,9 +13,8 @@ function navActive(pathname: string, to: string): boolean {
 
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
-  const { mode } = useAppConfig();
   const { t } = useLanguage();
-  const showLanguageSwitcher = mode === "PROMOTION";
+  const { mode } = useAppConfig();
   const nav = [
     { to: "/", label: t("nav.checkin") },
     { to: "/tasks", label: t("nav.mainline") },
@@ -30,9 +29,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="habit-device-screen">
           <div className="habit-app">
             <main className="habit-main">
-              <header className="habit-header">
+              <header className={`habit-header${mode === "PROMOTION" ? " habit-header--promotion" : ""}`}>
                 <div className="habit-header__top">
-                  <div>
+                  <div className="habit-header__intro">
                     <h1 className="habit-brand">{t("brand.title")}</h1>
                     <p className="habit-header__subtitle habit-muted" style={{ margin: "2px 0 0", fontSize: 12 }}>
                       {t("brand.subtitle")}
@@ -40,7 +39,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     <p className="habit-tagline">{t("brand.tagline")}</p>
                   </div>
                   <div className="habit-header__tools">
-                    {showLanguageSwitcher ? <LanguageSwitcher /> : null}
+                    <LanguageSwitcher />
                     <HabitThemeSwitcher />
                   </div>
                 </div>

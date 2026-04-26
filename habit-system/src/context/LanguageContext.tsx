@@ -10,7 +10,17 @@ import {
 import { EN } from "../locales/en";
 import { ZH, type TransKey } from "../locales/zh";
 
-const STORAGE_KEY = "habit.ui.lang";
+const STORAGE_LEGACY = "habit.ui.lang";
+const STORAGE_PERSONAL = "habit.ui.lang.v1.personal";
+const STORAGE_PROMOTION = "habit.ui.lang.v1.promotion";
+
+function isPromotionBuild(): boolean {
+  return String(import.meta.env.VITE_APP_MODE ?? "PERSONAL").toUpperCase() === "PROMOTION";
+}
+
+function storageKeyForBuild(): string {
+  return isPromotionBuild() ? STORAGE_PROMOTION : STORAGE_PERSONAL;
+}
 
 export type Lang = "zh" | "en";
 
@@ -28,14 +38,17 @@ function interpolate(s: string, vars?: Record<string, string | number>): string 
 
 function readLang(): Lang {
   try {
-    const r = localStorage.getItem(STORAGE_KEY);
-    if (r === "en" || r === "zh") return r;
+    if (isPromotionBuild()) {
+      const r = localStorage.getItem(STORAGE_PROMOTION) ?? localStorage.getItem(STORAGE_LEGACY);
+      if (r === "en" || r === "zh") return r;
+      return "en";
+    }
+    const p = localStorage.getItem(STORAGE_PERSONAL);
+    if (p === "en" || p === "zh") return p;
   } catch {
     /* ignore */
   }
-  if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("en")) {
-    return "en";
-  }
+  // 个人版仅读独立 key，不回退到旧全局键，避免之前存的 en 把个人版变全英；默认中文
   return "zh";
 }
 
@@ -52,7 +65,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, lang);
+      localStorage.setItem(storageKeyForBuild(), lang);
     } catch {
       /* ignore */
     }

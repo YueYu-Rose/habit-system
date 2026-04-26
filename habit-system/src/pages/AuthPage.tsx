@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useAppConfig } from "../config/appConfig";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useHabitToast } from "../context/HabitToastContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -8,16 +8,24 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 type TabMode = "login" | "register";
 
 export function AuthPage() {
-  const { mode: appMode } = useAppConfig();
+  const navigate = useNavigate();
   const { login, register } = useAuth();
   const { toast } = useHabitToast();
   const { t } = useLanguage();
-  const showLanguageSwitcher = appMode === "PROMOTION";
   const [mode, setMode] = useState<TabMode>("login");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [codeCooldown, setCodeCooldown] = useState(0);
+
+  useEffect(() => {
+    if (codeCooldown <= 0) return;
+    const id = window.setTimeout(() => {
+      setCodeCooldown((c) => (c <= 1 ? 0 : c - 1));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [codeCooldown]);
 
   const submit = async () => {
     if (busy) return;
@@ -35,6 +43,7 @@ export function AuthPage() {
         return;
       }
       toast({ title: mode === "login" ? t("auth.toast.loginOk") : t("auth.toast.registerOk"), tone: "positive" });
+      navigate("/", { replace: true });
     } finally {
       setBusy(false);
     }
@@ -43,11 +52,9 @@ export function AuthPage() {
   return (
     <div className="habit-auth-page">
       <div className="habit-auth-card">
-        {showLanguageSwitcher ? (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-            <LanguageSwitcher />
-          </div>
-        ) : null}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+          <LanguageSwitcher />
+        </div>
         <h1 className="habit-auth-title">{mode === "login" ? t("auth.title.login") : t("auth.title.register")}</h1>
 
         <div className="habit-task-kind-row" style={{ marginBottom: 14 }}>
@@ -100,9 +107,14 @@ export function AuthPage() {
               <button
                 type="button"
                 className="habit-btn habit-btn--secondary habit-auth-code-send"
-                onClick={() => toast({ title: t("auth.toast.codeSent"), tone: "positive" })}
+                disabled={codeCooldown > 0}
+                onClick={() => {
+                  if (codeCooldown > 0) return;
+                  setCodeCooldown(60);
+                  toast({ title: t("auth.toast.codeSentEmail"), tone: "positive" });
+                }}
               >
-                {t("auth.sendCode")}
+                {codeCooldown > 0 ? t("auth.sendCode.cooldown", { n: codeCooldown }) : t("auth.sendCode")}
               </button>
             </div>
           </>

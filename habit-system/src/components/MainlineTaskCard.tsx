@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { useAppConfig } from "../config/appConfig";
 import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { MainlineCelebrateModal } from "./MainlineCelebrateModal";
 
 export function MainlineTaskCard() {
   const { t } = useLanguage();
+  const { mode } = useAppConfig();
+  const isPromo = mode === "PROMOTION";
   const { state, addQuickPoints, setCurrentName, startNewMainline, archiveAndClearCurrent } = useMainlineLoop();
   const [draftName, setDraftName] = useState("");
   const [celebrate, setCelebrate] = useState<null | { name: string; points: number }>(null);
@@ -76,9 +79,11 @@ export function MainlineTaskCard() {
           <span className="habit-mainline-dual-pts">{t("mainline.cumulative")}</span>
         </h2>
         <div className="habit-mainline-total-pts">{total}</div>
-        <p className="habit-muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
-          {t("mainline.multiReward")}
-        </p>
+        {!isPromo ? (
+          <p className="habit-muted" style={{ margin: "4px 0 0", fontSize: 12 }}>
+            {t("mainline.multiReward")}
+          </p>
+        ) : null}
       </div>
 
       <label className="habit-stat-label" htmlFor="habit-ml-rename" style={{ marginTop: 10 }}>

@@ -77,9 +77,16 @@ body {
 
 .habit-header__top {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px 12px;
+}
+
+/* 避免 flex 把左侧压得过窄，导致中文标题在字间断行（与语言/主题区宽度无关） */
+.habit-header__intro {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .habit-header__tools {
@@ -87,8 +94,83 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
   justify-content: flex-end;
+  box-sizing: border-box;
   flex-shrink: 0;
+}
+
+/* 更宽视口时恢复标题与语言/主题同一行，避免占过多垂直空间 */
+@media (min-width: 480px) {
+  .habit-header__top {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .habit-header__intro {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+  .habit-header__tools {
+    width: auto;
+    max-width: 52%;
+    flex-wrap: wrap;
+  }
+}
+
+/* 推广版：标题略小、工具区与标题同一行不换行，避免英文标题折行把整体顶下去 */
+.habit-header--promotion .habit-header__top {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-header--promotion .habit-header__intro {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: calc(100% - 168px);
+}
+
+.habit-header--promotion .habit-brand {
+  font-size: 1.08rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.habit-header--promotion .habit-header__tools {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.habit-header--promotion .habit-lang-switch__btn {
+  padding: 4px 8px;
+  font-size: 0.68rem;
+}
+
+.habit-header--promotion .habit-theme-switcher {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.habit-header--promotion .habit-theme-switcher__btn {
+  padding: 4px 6px;
+  font-size: 0.64rem;
+  gap: 3px;
+}
+
+.habit-header--promotion .habit-theme-switcher__dot {
+  width: 6px;
+  height: 6px;
 }
 
 .habit-lang-switch {
@@ -158,10 +240,21 @@ body {
 
 .habit-brand {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: clamp(1.05rem, 4.2vw, 1.4rem);
   font-weight: 650;
   letter-spacing: 0.02em;
   color: var(--theme-accent-text);
+  /* 与右侧主题/语言区并存时，flex 子项会变窄，中文易按字断行；固定为一行 */
+  white-space: nowrap;
+}
+
+/* 英文品牌名较长，窄屏允许折行，避免与工具区抢宽 */
+html:lang(en) .habit-brand {
+  white-space: normal;
+  line-height: 1.2;
+  word-break: break-word;
+  hyphens: auto;
+  max-width: 100%;
 }
 
 .habit-tagline {
@@ -169,6 +262,13 @@ body {
   font-size: 0.88rem;
   color: var(--habit-text-secondary);
   font-weight: 400;
+}
+
+/* 英文标语较长，默认会折行；在英文界面固定一行，窄屏用 clamp 略缩字 */
+html:lang(en) .habit-tagline {
+  white-space: nowrap;
+  font-size: clamp(0.68rem, 2.45vw, 0.88rem);
+  letter-spacing: -0.02em;
 }
 
 .habit-main {
@@ -1142,6 +1242,15 @@ body {
   font-size: 0.78rem;
   color: var(--habit-text-secondary);
   letter-spacing: 0.04em;
+}
+
+.habit-hero-points--promo {
+  display: block;
+  text-align: center;
+}
+
+.habit-hero-points--promo .habit-hero-points__value {
+  font-size: 1.9rem;
 }
 
 /* ==========================================================================
