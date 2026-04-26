@@ -70,7 +70,7 @@ That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* t
 | Mode | Intent | Engineering behaviour |
 |------|--------|------------------------|
 | **`PERSONAL`** | Day-to-day use with full feature surface (auth, external integrations where applicable). | May expect API base URL, backend, etc. No mock-only shortcuts unless configured. |
-| **`PROMOTION`** | **Portfolio / interview demo** on Vercel: **no** dependency on a local API for core flows. | **Offline-first** habits, rewards, and seeds; **AI Coach** can run on **mock** content when `VITE_AI_API_KEY` is missing so clicks always produce a “wow” response. |
+| **`PROMOTION`** | **Portfolio** on Vercel: **no** dependency on a local API for core flows. | **Offline-first** habits, rewards, and seeds; **AI Coach** can run on **mock** content when `VITE_AI_API_KEY` is missing so clicks always produce a “wow” response. |
 
 Switch via **`VITE_APP_MODE`** at **build time** (Vite embeds it). This is a deliberate **separation of concerns**: one codebase, two *deployables*, minimal `#ifdef`-style branching — the kind of **config-driven** thinking hiring managers look for in product-minded engineers.
 
