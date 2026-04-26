@@ -9,8 +9,8 @@ import {
 } from "react";
 import { EN } from "../locales/en";
 import { ZH, type TransKey } from "../locales/zh";
+import { readPromotionUiLang } from "../lib/promotionUiLang";
 
-const STORAGE_LEGACY = "habit.ui.lang";
 const STORAGE_PERSONAL = "habit.ui.lang.v1.personal";
 const STORAGE_PROMOTION = "habit.ui.lang.v1.promotion";
 
@@ -39,9 +39,7 @@ function interpolate(s: string, vars?: Record<string, string | number>): string 
 function readLang(): Lang {
   try {
     if (isPromotionBuild()) {
-      const r = localStorage.getItem(STORAGE_PROMOTION) ?? localStorage.getItem(STORAGE_LEGACY);
-      if (r === "en" || r === "zh") return r;
-      return "en";
+      return readPromotionUiLang();
     }
     const p = localStorage.getItem(STORAGE_PERSONAL);
     if (p === "en" || p === "zh") return p;

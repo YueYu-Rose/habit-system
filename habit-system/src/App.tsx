@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { PromotionLocaleSync } from "./components/PromotionLocaleSync";
 import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { MainQuestPage } from "./pages/MainQuestPage";
@@ -15,7 +16,7 @@ function GuardedRoute({ allow, element }: { allow: boolean; element: JSX.Element
 }
 
 export default function App() {
-  const { showAuth } = useAppConfig();
+  const { showAuth, isPromotionOffline } = useAppConfig();
   const { isLoggedIn } = useAuth();
 
   if (showAuth && !isLoggedIn) {
@@ -29,6 +30,7 @@ export default function App() {
 
   return (
     <Layout>
+      {isPromotionOffline ? <PromotionLocaleSync /> : null}
       <Routes>
         {/* 首页 = 打卡页 */}
         <Route path="/" element={<GuardedRoute allow={!showAuth || isLoggedIn} element={<HomePage />} />} />

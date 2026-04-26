@@ -6,17 +6,21 @@ import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
 import { loadRewardCatalog, nextRewardId, saveRewardCatalog, type RewardCatalogItem } from "../lib/rewardCatalogStorage";
-import type { TransKey } from "../locales/zh";
 
 type Reward = RewardCatalogItem;
 
 type CostPreset = 10 | 20 | 50 | "custom";
 
-const REWARD_TIERS: { id: "instant" | "restore" | "upgrade" | "mainline"; match: string; matchEn: string }[] = [
-  { id: "instant", match: "即时奖励", matchEn: "Instant" },
-  { id: "restore", match: "恢复配额", matchEn: "Restore" },
-  { id: "upgrade", match: "升级奖励", matchEn: "Upgrade" },
-  { id: "mainline", match: "主线兑现", matchEn: "Milestone" },
+const REWARD_TIERS: {
+  id: "instant" | "restore" | "upgrade" | "mainline";
+  titleKey: "rewards.tier.instant" | "rewards.tier.restore" | "rewards.tier.upgrade" | "rewards.tier.milestone";
+  match: string;
+  matchEn: string;
+}[] = [
+  { id: "instant", titleKey: "rewards.tier.instant", match: "即时奖励", matchEn: "Instant" },
+  { id: "restore", titleKey: "rewards.tier.restore", match: "恢复配额", matchEn: "Restore" },
+  { id: "upgrade", titleKey: "rewards.tier.upgrade", match: "升级奖励", matchEn: "Upgrade" },
+  { id: "mainline", titleKey: "rewards.tier.milestone", match: "主线兑现", matchEn: "Milestone" },
 ];
 
 function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
@@ -24,11 +28,11 @@ function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
 }
 
 export function RewardsPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useHabitToast();
   const { mode, showExternalIntegration } = useAppConfig();
   const isPromo = mode === "PROMOTION";
-  const newRewardTier = isPromo ? "Instant" : "即时奖励";
+  const newRewardTier = isPromo ? (lang === "en" ? "Instant" : "即时奖励") : "即时奖励";
   const { getEffectiveAvailable, spendableDelta, trySpendFromLocalPool, addToLocalPool } = useMainlineLoop();
   const [rows, setRows] = useState<Reward[]>(() => loadRewardCatalog());
   const [bal, setBal] = useState<{ available: number; lifetime: number } | null>(null);
@@ -48,6 +52,15 @@ export function RewardsPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
+    const h = () => {
+      setRows(loadRewardCatalog());
+      load();
+    };
+    window.addEventListener("habit-promo-data", h);
+    return () => window.removeEventListener("habit-promo-data", h);
   }, [load]);
 
   const showRedeemToast = useCallback(
@@ -153,7 +166,7 @@ export function RewardsPage() {
 
       {REWARD_TIERS.map((tier) => (
         <div key={tier.match}>
-          <h2 className="habit-section-title">{t(`rewards.tier.${tier.id}` as TransKey)}</h2>
+          <h2 className="habit-section-title">{t(tier.titleKey)}</h2>
           {byTier(tier).map((rw) => {
             const api = bal?.available ?? 0;
             const canRedeem = Boolean(
@@ -206,6 +219,11 @@ export function RewardsPage() {
               </div>
             );
           })}
+          {byTier(tier).length === 0 ? (
+            <p className="habit-muted" style={{ marginTop: 6, marginBottom: 10 }}>
+              {t("rewards.tier.empty")}
+            </p>
+          ) : null}
         </div>
       ))}
 

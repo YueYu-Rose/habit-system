@@ -1,4 +1,5 @@
 import { todayIsoLocal } from "./dateLocal";
+import { readPromotionUiLang } from "./promotionUiLang";
 
 const KEY = "habit_checkin_catalog_v1";
 
@@ -34,14 +35,14 @@ export type HabitCatalogState = {
 
 export const defaultHabitItemsZh: HabitDef[] = [
   { id: "def-sleep", name: "开始睡觉", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
-  { id: "def-wake", name: "起床了", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
+  { id: "def-wake", name: "起床", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
   { id: "def-shower", name: "已洗澡", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
   { id: "def-english", name: "英语口语", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
   { id: "def-cantonese", name: "粤语 / 多邻国", completePoints: 10, penalty: 10, streak: 0, systemKey: "cantonese", schedule: { type: "daily" } },
   { id: "def-exercise", name: "运动", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];
 
-/** 推广版 / PROMOTION 构建下的默认习惯名称（与中文条目 id / systemKey 一一对应） */
+/** 与 defaultHabitItemsZh 同 id、按语言分开展示名（推广 / 自测用） */
 export const defaultHabitItemsEn: HabitDef[] = [
   { id: "def-sleep", name: "Bedtime", completePoints: 15, penalty: 0, streak: 0, systemKey: "sleep", schedule: { type: "daily" } },
   { id: "def-wake", name: "Wake up", completePoints: 15, penalty: 0, streak: 0, systemKey: "wake", schedule: { type: "daily" } },
@@ -51,8 +52,17 @@ export const defaultHabitItemsEn: HabitDef[] = [
   { id: "def-exercise", name: "Exercise", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];
 
+export const DEFAULT_HABIT_TEMPLATE_IDS: readonly string[] = defaultHabitItemsZh.map((h) => h.id);
+
+export function getDefaultHabitItemsForLang(lang: "zh" | "en"): HabitDef[] {
+  return (lang === "en" ? defaultHabitItemsEn : defaultHabitItemsZh).map((h) => ({ ...h }));
+}
+
 export function getDefaultHabitItems(): HabitDef[] {
-  return (isPromotionBuild() ? defaultHabitItemsEn : defaultHabitItemsZh).map((h) => ({ ...h }));
+  if (isPromotionBuild()) {
+    return getDefaultHabitItemsForLang(readPromotionUiLang()).map((h) => ({ ...h }));
+  }
+  return defaultHabitItemsZh.map((h) => ({ ...h }));
 }
 
 const empty = (): HabitCatalogState => ({

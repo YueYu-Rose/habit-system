@@ -109,7 +109,7 @@ export function HomePage() {
   const timeLocale = lang === "en" ? "en-GB" : "zh-CN";
   const { toast } = useHabitToast();
   const { getEffectiveAvailable, spendableDelta } = useMainlineLoop();
-  const { catalog, removeHabit, addHabit, toggleLocalHabit, bumpHabitStreak } = useHabitCatalog();
+  const { catalog, removeHabit, addHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
 
   const [d, setD] = useState<Summary | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -140,6 +140,12 @@ export function HomePage() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useEffect(() => {
+    const h = () => reloadCatalog();
+    window.addEventListener("habit-promo-data", h);
+    return () => window.removeEventListener("habit-promo-data", h);
+  }, [reloadCatalog]);
 
   const daily = d?.habitDaily ?? null;
   const visibleHabits = catalog.items.filter((h) => isHabitDueOnWeekday(h, weekday));
