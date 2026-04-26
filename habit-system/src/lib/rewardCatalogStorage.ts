@@ -22,25 +22,46 @@ function normalizeRow(row: RewardCatalogItem): RewardCatalogItem {
   };
 }
 
-/** 推广版各 tier 示范（与 RewardsPage 的 match / matchEn 一致；中英不同文案） */
+/**
+ * 推广版奖励模板：与您设计的分档/积分一致（与 RewardsPage 的 match / matchEn 一致）
+ * 即时 20pt · 恢复 50pt · 升级 100pt · 主线 500pt
+ */
 export const defaultPromoRewardRowsZh: RewardCatalogItem[] = [
   { id: 1, tier: "即时奖励", title: "一杯喜欢的饮料", cost_points: 20 },
-  { id: 2, tier: "即时奖励", title: "看一集轻松内容", cost_points: 15 },
-  { id: 3, tier: "即时奖励", title: "出门散步", cost_points: 10 },
-  { id: 4, tier: "恢复配额", title: "补签一次", cost_points: 30 },
-  { id: 5, tier: "恢复配额", title: "增加今日目标额度", cost_points: 25 },
-  { id: 6, tier: "升级奖励", title: "开启下一个习惯位", cost_points: 50 },
-  { id: 7, tier: "主线兑现", title: "主线完成·大餐一顿", cost_points: 200 },
+  { id: 2, tier: "即时奖励", title: "一份小零食", cost_points: 20 },
+  { id: 3, tier: "即时奖励", title: "看一集轻松内容", cost_points: 20 },
+  { id: 4, tier: "即时奖励", title: "30 分钟无负担休息", cost_points: 20 },
+  { id: 5, tier: "即时奖励", title: "一次小甜品", cost_points: 20 },
+  { id: 6, tier: "即时奖励", title: "一顿普通但喜欢的小吃", cost_points: 20 },
+  { id: 7, tier: "恢复配额", title: "一顿喜欢的饭", cost_points: 50 },
+  { id: 8, tier: "恢复配额", title: "一次比较放松的娱乐活动", cost_points: 50 },
+  { id: 9, tier: "恢复配额", title: "购买心愿单上低于 200 RMB 的东西", cost_points: 50 },
+  { id: 10, tier: "升级奖励", title: "购买心愿单上低于 500 RMB 的东西", cost_points: 100 },
+  { id: 11, tier: "升级奖励", title: "一次专门出去放松 / 逛街", cost_points: 100 },
+  { id: 12, tier: "升级奖励", title: "吃一顿更满意的饭", cost_points: 100 },
+  { id: 13, tier: "主线兑现", title: "愿望清单中的一项正式兑现", cost_points: 500 },
+  { id: 14, tier: "主线兑现", title: "某次旅行基金的一部分", cost_points: 500 },
+  { id: 15, tier: "主线兑现", title: "某个长期想买的物品预算", cost_points: 500 },
+  { id: 16, tier: "主线兑现", title: "一个有仪式感的重要奖励", cost_points: 500 },
 ];
 
 export const defaultPromoRewardRowsEn: RewardCatalogItem[] = [
   { id: 1, tier: "Instant", title: "A favorite drink", cost_points: 20 },
-  { id: 2, tier: "Instant", title: "Watch a relaxing episode", cost_points: 15 },
-  { id: 3, tier: "Instant", title: "Take a walk", cost_points: 10 },
-  { id: 4, tier: "Restore", title: "One extra check-in", cost_points: 30 },
-  { id: 5, tier: "Restore", title: "Refill today’s quota", cost_points: 25 },
-  { id: 6, tier: "Upgrade", title: "Unlock another habit slot", cost_points: 50 },
-  { id: 7, tier: "Milestone", title: "Milestone treat dinner", cost_points: 200 },
+  { id: 2, tier: "Instant", title: "A small snack", cost_points: 20 },
+  { id: 3, tier: "Instant", title: "Watch a relaxing episode", cost_points: 20 },
+  { id: 4, tier: "Instant", title: "30 minutes of guilt-free rest", cost_points: 20 },
+  { id: 5, tier: "Instant", title: "A little dessert", cost_points: 20 },
+  { id: 6, tier: "Instant", title: "A simple meal you really enjoy", cost_points: 20 },
+  { id: 7, tier: "Restore", title: "A meal you love", cost_points: 50 },
+  { id: 8, tier: "Restore", title: "A more relaxing bit of fun", cost_points: 50 },
+  { id: 9, tier: "Restore", title: "Something on your wish list under 200 CNY", cost_points: 50 },
+  { id: 10, tier: "Upgrade", title: "Something on your wish list under 500 CNY", cost_points: 100 },
+  { id: 11, tier: "Upgrade", title: "A proper relax / shopping outing", cost_points: 100 },
+  { id: 12, tier: "Upgrade", title: "A more satisfying meal", cost_points: 100 },
+  { id: 13, tier: "Milestone", title: "One wish-list item, fully", cost_points: 500 },
+  { id: 14, tier: "Milestone", title: "Part of a travel fund", cost_points: 500 },
+  { id: 15, tier: "Milestone", title: "Budget for something you’ve wanted a long time", cost_points: 500 },
+  { id: 16, tier: "Milestone", title: "A special, meaningful reward", cost_points: 500 },
 ];
 
 /** @deprecated 使用 getDefaultPromoRewardRowsForLang */
