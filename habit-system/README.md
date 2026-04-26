@@ -1,12 +1,91 @@
-# 个人养成系统（中文版）
+# ✨ Habit System: AI-Powered Personal Growth Lab
 
-## 技术栈
+<div align="center">
 
-- 前端：Vite + React + TypeScript + React Router（端口 **5174**）
-- 后端：Express + better-sqlite3（端口 **3002**）
-- 数据：`habit-system/data/habit.db`
+![Habit System — check-ins, mainline, rewards, AI coach](https://placehold.co/1200x420/0f172a/38bdf8?text=Habit+System+%E2%80%94+Personal+Growth+Lab&font=montserrat)
 
-## 本地运行
+*Replace the placeholder above with a hero screenshot: Report page + check-in, or a device mock.*
+
+**Live demo (when deployed):** add your Vercel URL here
+
+</div>
+
+> *"What gets measured gets managed — but what gets *played* gets remembered."*  
+> — *Inspired by Drucker, remixed for gamified habit design.*
+
+---
+
+## 🧭 Product Vision
+
+**Why does this exist?** To bridge the gap between *habit formation* and *long-term motivation* through **gamification** and **AI** — turning daily micro-actions into a visible point economy, a mainline quest, and an LLM coach that actually reads *your* week, not a generic blog post.
+
+---
+
+## 🎯 Key Features (PM Focus)
+
+| Feature | What it does | PM angle |
+|--------|--------------|----------|
+| **AI Habit Coach** | Summarises **7 days of on-device check-ins** (wake, sleep, language habits, etc.), sends structured context to an **OpenAI-compatible** chat endpoint, and returns **sharp, English, Markdown** coaching. | Shows how **LLMs** turn *behavioural telemetry* into narrative and advice — the same path from *analytics event* to *insight* product managers design for. |
+| **Dynamic Reward Economy** | Points from habits feed **spendable** balance; a **multi-tier reward catalog** (quick wins → refill → upgrade → milestone) with redeem / undo flows. | Illustrates **closed-loop** motivation: earn → spend → dopamine, with guardrails (local pool, tiering). |
+| **Vibe-Driven UI** | Minimal, **mobile-first** “device frame” UI, high-contrast actions, check-in at the centre. | Optimised for **high-frequency, low-friction** interaction — the same bar you set for consumer habit apps. |
+
+---
+
+## 🚀 The “Vibe Coding” Story
+
+> *"The best product sense is shipping sense."*
+
+This project was not wireframed in Figma for months — it was **shipped in tight loops** using **Cursor + modern LLM assistants** as a *co-pilot*, not a replacement for judgement:
+
+- **Idea → scaffold:** React + Vite + routing + first screens in days, not sprints.  
+- **Spec → code:** feature prompts (e.g. promotion build without backend, LocalStorage seeding, i18n) turned into *reviewable* diffs, then refined by hand.  
+- **CI → Vercel:** `main` as source of truth; **environment modes** for demo vs full product; iteration velocity visible to any interviewer.  
+
+That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* to enforce architecture (offline-first, env-based secrets, no API keys in source), and *how* to frame prompts so the output matches a **product** outcome, not a code golf exercise.
+
+> *"Tools don’t make the PM. Instrumentation + taste + iteration do."* — the vibe we optimised for.
+
+---
+
+## 🧱 Technical Architecture
+
+- **Client:** **React 18** + **TypeScript** + **Vite** (fast HMR, lean production build).  
+- **Styling:** A dedicated **`habit.css` design system** (tokens, “device” layout, high-frequency check-in affordances); **Tailwind**-style utility workflow can be layered where `tailwind.config` is fully wired.  
+- **Data (offline-first):** **LocalStorage** for habit catalog, check-in state, reward catalog, mainline pool, and seed data for the **PROMOTION** build — *no network required* for the core loop on the demo.  
+- **AI:** `VITE_AI_API_KEY` + **OpenAI-compatible** `chat/completions` (OpenAI, DeepSeek, or any compatible base URL); **mock coach** when keys are absent in promotion mode.  
+- **Optional backend (personal build):** Express + SQLite under `server/` for a fuller ledger when running locally (see scripts in this repo).
+
+```text
+┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
+│   Vite UI   │────▶│  LocalStorage    │     │  AI Coach   │
+│  (Habits,   │     │  (check-ins,     │────▶│  (LLM API / │
+│  rewards)   │     │  rewards, meta)  │     │   mock)     │
+└─────────────┘     └──────────────────┘     └─────────────┘
+```
+
+---
+
+## ⚙️ Environment Modes: `PERSONAL` vs `PROMOTION`
+
+| Mode | Intent | Engineering behaviour |
+|------|--------|------------------------|
+| **`PERSONAL`** | Day-to-day use with full feature surface (auth, external integrations where applicable). | May expect API base URL, backend, etc. No mock-only shortcuts unless configured. |
+| **`PROMOTION`** | **Portfolio / interview demo** on Vercel: **no** dependency on a local API for core flows. | **Offline-first** habits, rewards, and seeds; **AI Coach** can run on **mock** content when `VITE_AI_API_KEY` is missing so clicks always produce a “wow” response. |
+
+Switch via **`VITE_APP_MODE`** at **build time** (Vite embeds it). This is a deliberate **separation of concerns**: one codebase, two *deployables*, minimal `#ifdef`-style branching — the kind of **config-driven** thinking hiring managers look for in product-minded engineers.
+
+---
+
+## 🗺️ Roadmap
+
+- **Back-end:** e.g. **Supabase** (auth + sync + RLS) for real multi-device history and team-friendly habits.  
+- **Social layer:** light accountability (streaks visible to friends, opt-in) without turning into another feed.  
+- **AI Coach 2.0:** streaming responses, *live* windowed metrics (not just weekly), and **tool-calling** into your ledger for grounded numbers.  
+- **Quality:** E2E on critical paths, accessibility audit, and PWA for “home screen” install.
+
+---
+
+## ▶️ How to Run
 
 ```bash
 cd habit-system
@@ -14,37 +93,28 @@ npm install
 npm run dev
 ```
 
-- 浏览器打开：**http://localhost:5174**
-- API 健康检查：**http://localhost:3002/api/health**
+- Open the local URL Vite prints (commonly `http://localhost:5174`).  
+- **Production-like promotion build (optional):** `npm run build:promo` (uses Vite `production` mode; align with your `VITE_APP_MODE` and env files).
 
-## 与英文 To-do List 联动（未来）
+**Environment (minimal for AI Coach in production / Vercel):**
 
-1. **推荐**：英文站提供只读 `GET /api/todo/day?date=YYYY-MM-DD`（或专用导出接口），在 `server/services/externalTodoAdapter.ts` 中实现 `fetchExternalTodoCompletionRate`，配置 `external_todo_config.mode = 'http'` 与 `base_url`。
-2. **同机共享 SQLite**：仅开发机可行，两应用读同一 `app.db` 需处理路径与锁。
-3. **导出文件**：定时 JSON + 本系统定时导入 `external_todo_snapshots`。
+| Variable | Notes |
+|----------|--------|
+| `VITE_APP_MODE` | `PROMOTION` or `PERSONAL` |
+| `VITE_AI_API_KEY` | Optional in promotion (mock used if empty) |
+| `VITE_AI_BASE_URL` | e.g. `https://api.openai.com/v1` or `https://api.deepseek.com/v1` |
+| `VITE_AI_MODEL` | e.g. `gpt-4o-mini` or `deepseek-chat` |
 
-当前「记录」页可**手动录入**总任务数/完成数，用于测试完成率计分。
+> *"If it’s not in `env`, it’s not a secret. If it’s in the repo, it’s public."* — treat keys accordingly.
 
-## 每日结算
+---
 
-**仅手动触发**：在「记录」页点击「结算今日」，服务端汇总当日 `point_ledger` 并写入 `daily_settlements`。应用内**没有**定时任务或午夜自动结算。
+## 📄 License
 
-## 阶段任务 / 自定义任务与积分
+Private / portfolio use unless otherwise specified by the author.
 
-- 在「任务」页创建任务时可填**完成分值**与**未完成扣分**（均为 5 的倍数；服务端会就近取整）。
-- 点击**完成**会加分、**未完成**会扣分（需未完成扣分大于 0），并写入 `point_ledger`（`source_type: manual`），首页可用积分与「记录」页流水会更新。
-- 同一任务同一 habit 日只能完成或扣分一次（幂等）。
+---
 
-## 验收测试清单（建议顺序）
-
-1. **启动**：`cd habit-system` → `npm install` → `npm run dev`，浏览器打开 http://localhost:5174 。
-2. **首页**：确认显示当日日期、可用积分、本周净积分；点「去任务页打卡」进入任务页。
-3. **必做打卡**：在任务页依次点「开始睡觉」「起床了」「已洗澡」等（可按你当日流程选几项）；回首页看可用积分是否变化。
-4. **阶段 / 自定义任务**：新建一条阶段任务（如完成 +10、未完成 −5）；在列表中先点「完成」，首页应 +10；再新建另一条并点「未完成」，应 −5。**记录**页「积分流水」应出现对应标题与分数。
-5. **奖励**：进「奖励」页，选一项有足够积分的奖励点「兑换」；可用积分减少，**记录**页下方「兑换记录」出现一条。
-6. **每日结算**：在「记录」页点「结算今日」；无报错即表示当日汇总已写入结算表（不改变余额，仅记账汇总）。
-
-## 目录说明
-
-- `server/` — 养成 API、迁移、积分与外部 To-do 适配层
-- `src/` — 中文前端（首页、任务、日常、奖励、记录、主线）
+<p align="center">
+  <strong>Habit System</strong> — *ship habits like you ship product.*
+</p>
