@@ -35,7 +35,7 @@ export function MainlineTaskCard() {
         <p className="habit-muted" style={{ margin: "0 0 10px" }}>
           {t("mainline.emptyHint")}
         </p>
-        <div className="habit-grid-2" style={{ alignItems: "center", gap: 8 }}>
+        <div className="habit-grid-2">
           <input
             className="habit-input"
             placeholder={t("mainline.ph.name")}

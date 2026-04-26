@@ -6,6 +6,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
 import { loadRewardCatalog, nextRewardId, saveRewardCatalog, type RewardCatalogItem } from "../lib/rewardCatalogStorage";
+import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 
 type Reward = RewardCatalogItem;
 
@@ -60,7 +61,11 @@ export function RewardsPage() {
       load();
     };
     window.addEventListener("habit-promo-data", h);
-    return () => window.removeEventListener("habit-promo-data", h);
+    window.addEventListener(REMOTE_DATA_EVENT, h);
+    return () => {
+      window.removeEventListener("habit-promo-data", h);
+      window.removeEventListener(REMOTE_DATA_EVENT, h);
+    };
   }, [load]);
 
   const showRedeemToast = useCallback(
@@ -181,7 +186,7 @@ export function RewardsPage() {
                 style={{ padding: 16, marginBottom: 10 }}
               >
                 <div className="habit-reward-row-head">
-                  <span className="habit-reward-title" style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <span className="habit-reward-title" style={{ paddingRight: 8 }}>
                     {rw.title}
                   </span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
