@@ -30,3 +30,6 @@ data/*.db-wal
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# 私人材料（不推送到远程）
+简历修改/
