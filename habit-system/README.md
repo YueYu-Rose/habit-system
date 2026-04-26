@@ -1,7 +1,5 @@
 # 个人养成系统（中文版）
 
-独立项目，与仓库根目录的**英文 To-do List** 不共用页面与数据库。
-
 ## 技术栈
 
 - 前端：Vite + React + TypeScript + React Router（端口 **5174**）
