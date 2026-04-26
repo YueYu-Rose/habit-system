@@ -1111,6 +1111,46 @@ html:lang(en) .habit-tagline {
 }
 
 /* ==========================================================================
+ * 打卡页根容器：与 .habit-app 的左右内边距配合，不额外吃宽度；中/英同一套盒模型
+ * ========================================================================== */
+.habit-checkin-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* 移动端：与英文同一物理宽度，避免卡片或区块被内层 flex 收得过窄 */
+@media (max-width: 639.98px) {
+  .habit-checkin-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .habit-checkin-page .habit-hero-points,
+  .habit-checkin-page .habit-dailylog-head,
+  .habit-checkin-page .habit-checkin-stack,
+  .habit-checkin-page .habit-dailylog-add,
+  .habit-checkin-page .habit-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .habit-checkin-page .habit-checkin-card,
+  .habit-checkin-page .habit-dailylog-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* ==========================================================================
  * 打卡页 · Check-in 单行（一层卡片：Checkbox + 文案 + 右侧分数）
  * 已完成：整卡背景 = 当前主题渐变最浅格 efficiency-1（不用绿色）
  * ========================================================================== */
@@ -1157,13 +1197,14 @@ html:lang(en) .habit-tagline {
 
 /* 文案区：无任何背景/边框/阴影，杜绝「内部灰框」 */
 .habit-checkin-copy {
-  flex: 1;
+  flex: 1 1 0%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
   justify-content: center;
   text-align: left;
+  align-items: stretch;
   align-self: stretch;
   cursor: pointer;
   outline: none;
@@ -1203,16 +1244,23 @@ html:lang(en) .habit-tagline {
 }
 
 .habit-checkin-title {
+  flex: 1 1 0%;
+  min-width: 0;
   font-weight: 600;
   color: var(--habit-text);
   font-size: 0.96rem;
   line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .habit-checkin-title-wrap {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .habit-checkin-streak {
@@ -1224,11 +1272,15 @@ html:lang(en) .habit-tagline {
   border-radius: 999px;
   padding: 1px 7px;
   line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .habit-checkin-meta {
   font-size: 0.76rem;
   color: var(--habit-text-secondary);
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .habit-checkin-points {
@@ -2275,6 +2327,14 @@ html:lang(en) .habit-tagline {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 6px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.habit-dailylog-head .habit-section-title {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .habit-dailylog-edit {

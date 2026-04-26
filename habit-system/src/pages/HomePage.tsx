@@ -233,6 +233,7 @@ export function HomePage() {
 
   return (
     <>
+      <section className="habit-checkin-page" aria-label={t("nav.checkin")}>
       <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>
@@ -263,7 +264,7 @@ export function HomePage() {
         {mode === "PERSONAL" &&
         showExternalIntegration &&
         (spendableDelta > 0 || (catalog.customWallet || 0) > 0) ? (
-          <p className="habit-muted" style={{ margin: "4px 2px 0", fontSize: 12, textAlign: "center" }}>
+          <p className="habit-muted" style={{ margin: "4px 0 0", fontSize: 12, textAlign: "center" }}>
             {t("home.localPoolNote", { d1: spendableDelta, d2: catalog.customWallet || 0 })}
           </p>
         ) : null}
@@ -375,6 +376,7 @@ export function HomePage() {
           </div>
         </>
       ) : null}
+      </section>
 
       <OverlayPortal>
         <NewHabitBottomSheet
