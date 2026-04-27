@@ -201,11 +201,11 @@ export function AuthPage() {
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={8}
+                  maxLength={6}
                   enterKeyHint="next"
-                  placeholder={t("auth.ph.code")}
+                  placeholder={t("auth.ph.otp6")}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 />
               </div>
               <button

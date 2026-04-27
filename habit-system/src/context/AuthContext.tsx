@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!raw) {
         return { ok: false, errorKey: "auth.error.missingOtp" };
       }
-      if (!/^\d{8}$/.test(raw)) {
+      if (!/^\d{6}$/.test(raw)) {
         return { ok: false, errorKey: "auth.error.invalidOtp" };
       }
       if (!password || password.length < 6) {
