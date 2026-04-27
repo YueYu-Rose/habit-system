@@ -6,6 +6,13 @@ import {
 } from "./habitListStorage";
 import { loadRewardCatalog, REWARD_CATALOG_STORAGE_KEY, type RewardCatalogItem } from "./rewardCatalogStorage";
 import { loadMainlineLoopState, MAINLINE_LOOP_STORAGE_KEY, type MainlineLoopState } from "./mainlineLoopStorage";
+import {
+  logRemoteRowKeysDev,
+  REMOTE_HABIT_COLUMNS,
+  REMOTE_MAINLINE_COLUMNS,
+  REMOTE_REWARD_COLUMNS,
+  REMOTE_TABLE,
+} from "./supabaseRemoteTables";
 
 export const REMOTE_DATA_EVENT = "user-remote-pulled";
 
@@ -41,10 +48,13 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
   if (!sb) return;
 
   console.log("2. Fetching remote rows (user_habit_data, user_reward_data, user_mainline_data)…");
+  const habitSel = `${REMOTE_HABIT_COLUMNS.payload},${REMOTE_HABIT_COLUMNS.ts}` as const;
+  const rewardSel = `${REMOTE_REWARD_COLUMNS.payload},${REMOTE_REWARD_COLUMNS.ts}` as const;
+  const mainlineSel = `${REMOTE_MAINLINE_COLUMNS.payload},${REMOTE_MAINLINE_COLUMNS.ts}` as const;
   const [hRes, rRes, mRes] = await Promise.all([
-    sb.from("user_habit_data").select("catalog,updated_at").eq("user_id", userId).maybeSingle(),
-    sb.from("user_reward_data").select("rows,updated_at").eq("user_id", userId).maybeSingle(),
-    sb.from("user_mainline_data").select("state,updated_at").eq("user_id", userId).maybeSingle(),
+    sb.from(REMOTE_TABLE.habit).select(habitSel).eq(REMOTE_HABIT_COLUMNS.pk, userId).maybeSingle(),
+    sb.from(REMOTE_TABLE.reward).select(rewardSel).eq(REMOTE_REWARD_COLUMNS.pk, userId).maybeSingle(),
+    sb.from(REMOTE_TABLE.mainline).select(mainlineSel).eq(REMOTE_MAINLINE_COLUMNS.pk, userId).maybeSingle(),
   ]);
 
   if (hRes.error) {
@@ -63,29 +73,35 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
   const hRow = hRes.data;
   const rRow = rRes.data;
   const mRow = mRes.data;
+  logRemoteRowKeysDev(REMOTE_TABLE.habit, hRow);
+  logRemoteRowKeysDev(REMOTE_TABLE.reward, rRow);
+  logRemoteRowKeysDev(REMOTE_TABLE.mainline, mRow);
   const localH = loadHabitCatalog();
   const localR = loadRewardCatalog();
   const localM = loadMainlineLoopState();
 
-  if (hRow?.catalog && typeof hRow.catalog === "object") {
+  const hPayload = hRow ? (hRow as Record<string, unknown>)[REMOTE_HABIT_COLUMNS.payload] : undefined;
+  if (hPayload && typeof hPayload === "object") {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(HABIT_CATALOG_STORAGE_KEY, JSON.stringify(hRow.catalog));
+      localStorage.setItem(HABIT_CATALOG_STORAGE_KEY, JSON.stringify(hPayload));
     }
   } else {
     await pushHabitCatalogToRemote(userId, localH);
   }
 
-  if (rRow?.rows && Array.isArray(rRow.rows)) {
+  const rPayload = rRow ? (rRow as Record<string, unknown>)[REMOTE_REWARD_COLUMNS.payload] : undefined;
+  if (Array.isArray(rPayload)) {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(REWARD_CATALOG_STORAGE_KEY, JSON.stringify(rRow.rows));
+      localStorage.setItem(REWARD_CATALOG_STORAGE_KEY, JSON.stringify(rPayload));
     }
   } else {
     await pushRewardDataToRemote(userId, localR);
   }
 
-  if (mRow?.state && typeof mRow.state === "object") {
+  const mPayload = mRow ? (mRow as Record<string, unknown>)[REMOTE_MAINLINE_COLUMNS.payload] : undefined;
+  if (mPayload && typeof mPayload === "object") {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(MAINLINE_LOOP_STORAGE_KEY, JSON.stringify(mRow.state));
+      localStorage.setItem(MAINLINE_LOOP_STORAGE_KEY, JSON.stringify(mPayload));
     }
   } else {
     await pushMainlineDataToRemote(userId, localM);
@@ -97,9 +113,13 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
 async function pushHabitCatalogToRemote(userId: string, s: HabitCatalogState): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const { error } = await sb.from("user_habit_data").upsert(
-    { user_id: userId, catalog: s, updated_at: new Date().toISOString() },
-    { onConflict: "user_id" }
+  const { error } = await sb.from(REMOTE_TABLE.habit).upsert(
+    {
+      [REMOTE_HABIT_COLUMNS.pk]: userId,
+      [REMOTE_HABIT_COLUMNS.payload]: s,
+      [REMOTE_HABIT_COLUMNS.ts]: new Date().toISOString(),
+    },
+    { onConflict: REMOTE_HABIT_COLUMNS.pk }
   );
   if (error) console.error("[userDataRemote] habit push", error);
 }
@@ -107,9 +127,13 @@ async function pushHabitCatalogToRemote(userId: string, s: HabitCatalogState): P
 async function pushRewardDataToRemote(userId: string, rows: RewardCatalogItem[]): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const { error } = await sb.from("user_reward_data").upsert(
-    { user_id: userId, rows, updated_at: new Date().toISOString() },
-    { onConflict: "user_id" }
+  const { error } = await sb.from(REMOTE_TABLE.reward).upsert(
+    {
+      [REMOTE_REWARD_COLUMNS.pk]: userId,
+      [REMOTE_REWARD_COLUMNS.payload]: rows,
+      [REMOTE_REWARD_COLUMNS.ts]: new Date().toISOString(),
+    },
+    { onConflict: REMOTE_REWARD_COLUMNS.pk }
   );
   if (error) console.error("[userDataRemote] reward push", error);
 }
@@ -117,9 +141,13 @@ async function pushRewardDataToRemote(userId: string, rows: RewardCatalogItem[])
 async function pushMainlineDataToRemote(userId: string, state: MainlineLoopState): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const { error } = await sb.from("user_mainline_data").upsert(
-    { user_id: userId, state, updated_at: new Date().toISOString() },
-    { onConflict: "user_id" }
+  const { error } = await sb.from(REMOTE_TABLE.mainline).upsert(
+    {
+      [REMOTE_MAINLINE_COLUMNS.pk]: userId,
+      [REMOTE_MAINLINE_COLUMNS.payload]: state,
+      [REMOTE_MAINLINE_COLUMNS.ts]: new Date().toISOString(),
+    },
+    { onConflict: REMOTE_MAINLINE_COLUMNS.pk }
   );
   if (error) console.error("[userDataRemote] mainline push", error);
 }
