@@ -174,6 +174,8 @@ export const EN: Record<TransKey, string> = {
     "From the last 7 days: you invested the most in your internship / job search — great focus. Your sleep is uneven; try putting your phone down before 11pm tonight.",
   "report.chart.sleep": "Sleep & wake (7 days)",
   "report.chart.points": "Execution (7 days, net points)",
+  "report.chart.emptyHint": "Check in and build up 7 days of data to see your trend charts.",
+  "report.sleepTooltip.noData": "No complete sleep & wake times that day",
   "report.ledger": "Point ledger (30 days)",
   "report.ledger.empty": "No entries in the last 30 days",
   "report.more": "More history",

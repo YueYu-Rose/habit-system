@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
+import { fetchHabitCatalogFromSupabase } from "../lib/fetchHabitCatalogFromSupabase";
+import { loadHabitCatalog, type HabitCatalogState } from "../lib/habitListStorage";
 import {
-  Area,
-  AreaChart,
+  buildReportSeries7Days,
+  type ReportPointsPoint,
+  type ReportSleepPoint,
+} from "../lib/reportSeriesFromCatalog";
+import { isSupabaseConfigured } from "../lib/supabase";
+import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
+import {
   CartesianGrid,
   Line,
   LineChart,
@@ -17,22 +25,6 @@ import {
 } from "recharts";
 
 type Lang = "zh" | "en";
-
-type SleepDatum = {
-  key: string;
-  dateLabel: string;
-  weekLabel: string;
-  sleepExt: number;
-  wakeExt: number;
-  range: [number, number];
-};
-
-type PointsDatum = {
-  key: string;
-  dateLabel: string;
-  weekLabel: string;
-  net: number;
-};
 
 type LedgerRow = {
   id: number;
@@ -47,27 +39,6 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function formatMMDD(d: Date) {
-  return `${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`;
-}
-
-function weekLabelFor(d: Date, lang: Lang) {
-  if (lang === "zh") {
-    const map = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-    return map[d.getDay()] ?? "";
-  }
-  return d.toLocaleDateString("en-GB", { weekday: "short" });
-}
-
-function minutesFromHM(hm: string): number {
-  const [h, m] = hm.split(":").map((x) => Number(x));
-  return Math.max(0, Math.min(24 * 60 - 1, h * 60 + (m || 0)));
-}
-
-function toExtendedMinutes(min: number): number {
-  return min < 12 * 60 ? min + 24 * 60 : min;
-}
-
 function formatHMFromExtended(minExt: number): string {
   const v = ((Math.round(minExt) % (24 * 60)) + 24 * 60) % (24 * 60);
   const h = Math.floor(v / 60);
@@ -75,46 +46,7 @@ function formatHMFromExtended(minExt: number): string {
   return `${pad2(h)}:${pad2(m)}`;
 }
 
-function useMockData(lang: Lang) {
-  return useMemo(() => {
-    const now = new Date();
-    now.setHours(12, 0, 0, 0);
-    const days: Date[] = [];
-    for (let i = 6; i >= 0; i -= 1) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
-      days.push(d);
-    }
-
-    const sleepHM = ["23:10", "23:35", "00:05", "23:50", "00:20", "23:25", "00:10"];
-    const wakeHM = ["06:40", "07:05", "06:20", "07:30", "06:55", "06:10", "07:15"];
-    const points = [12, 5, -10, 8, 0, 15, -5];
-
-    const sleepSeries: SleepDatum[] = days.map((d, i) => {
-      const s = toExtendedMinutes(minutesFromHM(sleepHM[i] ?? "23:30"));
-      const w = toExtendedMinutes(minutesFromHM(wakeHM[i] ?? "06:45"));
-      return {
-        key: d.toISOString().slice(0, 10),
-        dateLabel: formatMMDD(d),
-        weekLabel: weekLabelFor(d, lang),
-        sleepExt: s,
-        wakeExt: w,
-        range: [s, w],
-      };
-    });
-
-    const pointsSeries: PointsDatum[] = days.map((d, i) => ({
-      key: d.toISOString().slice(0, 10),
-      dateLabel: formatMMDD(d),
-      weekLabel: weekLabelFor(d, lang),
-      net: points[i] ?? 0,
-    }));
-
-    return { sleepSeries, pointsSeries };
-  }, [lang]);
-}
-
-type TickDatum = Pick<SleepDatum, "dateLabel" | "weekLabel">;
+type TickDatum = Pick<ReportSleepPoint, "dateLabel" | "weekLabel">;
 
 function buildDateLabelMap(rows: { key: string; dateLabel: string; weekLabel: string }[]): Map<string, TickDatum> {
   const m = new Map<string, TickDatum>();
@@ -152,17 +84,35 @@ function ReportSleepTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: { payload: SleepDatum }[];
+  payload?: { payload: ReportSleepPoint }[];
 }) {
   const { t } = useLanguage();
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
+  if (d.sleepExt == null || d.wakeExt == null) {
+    return (
+      <div
+        style={{
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid #f3f4f6",
+          borderRadius: 12,
+          padding: "10px 12px",
+          boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+          color: "#6b7280",
+          minWidth: 160,
+        }}
+      >
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.dateLabel} {d.weekLabel}</div>
+        <div style={{ fontSize: 12 }}>{t("report.sleepTooltip.noData")}</div>
+      </div>
+    );
+  }
   const sleep = formatHMFromExtended(d.sleepExt);
   const wake = formatHMFromExtended(d.wakeExt);
   const mins = Math.max(0, d.wakeExt - d.sleepExt);
   const hrs = Math.floor(mins / 60);
-  const mm = mins % 60;
+  const mm = Math.round(mins % 60);
   const duration = t("report.sleepTooltip.durationFmt", { h: hrs, m: pad2(mm) });
   return (
     <div
@@ -202,7 +152,7 @@ function ReportPointsTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: { payload: PointsDatum }[];
+  payload?: { payload: ReportPointsPoint }[];
 }) {
   const { t } = useLanguage();
   if (!active || !payload?.length) return null;
@@ -263,7 +213,38 @@ function formatAmount(r: LedgerRow): string {
 export function ReportPage() {
   const { t, lang } = useLanguage();
   const { showAI } = useAppConfig();
-  const { sleepSeries, pointsSeries } = useMockData(lang);
+  const { user } = useAuth();
+  const [catalog, setCatalog] = useState<HabitCatalogState>(() => loadHabitCatalog());
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (isSupabaseConfigured() && user?.id) {
+        const remote = await fetchHabitCatalogFromSupabase(user.id);
+        if (cancelled) return;
+        if (remote) setCatalog(remote);
+        else setCatalog(loadHabitCatalog());
+        return;
+      }
+      if (cancelled) return;
+      setCatalog(loadHabitCatalog());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    const h = () => setCatalog(loadHabitCatalog());
+    window.addEventListener(REMOTE_DATA_EVENT, h);
+    return () => window.removeEventListener(REMOTE_DATA_EVENT, h);
+  }, []);
+
+  const { sleepSeries, pointsSeries, hasAnyActivity } = useMemo(
+    () => buildReportSeries7Days(catalog, lang as Lang),
+    [catalog, lang]
+  );
+
   const chartLabelByKey = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
   const end = todayIsoLocal();
   const start = addDays(end, -30);
@@ -276,19 +257,21 @@ export function ReportPage() {
   }, [start, end]);
 
   const yDomain = useMemo(() => {
-    let minV = Number.POSITIVE_INFINITY;
-    let maxV = Number.NEGATIVE_INFINITY;
+    const vals: number[] = [];
     for (const r of sleepSeries) {
-      minV = Math.min(minV, r.sleepExt, r.wakeExt);
-      maxV = Math.max(maxV, r.sleepExt, r.wakeExt);
+      if (r.sleepExt != null) vals.push(r.sleepExt);
+      if (r.wakeExt != null) vals.push(r.wakeExt);
     }
-    if (!Number.isFinite(minV) || !Number.isFinite(maxV)) return [21 * 60, 34 * 60] as const;
+    if (vals.length === 0) return [21 * 60, 34 * 60] as const;
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
     const pad = 30;
     return [Math.floor((minV - pad) / 15) * 15, Math.ceil((maxV + pad) / 15) * 15] as const;
   }, [sleepSeries]);
 
   const primary = "var(--color-primary)";
-  const fillLight = "color-mix(in srgb, var(--color-efficiency-1) 70%, transparent)";
+
+  const showCharts = hasAnyActivity;
 
   return (
     <>
@@ -306,6 +289,8 @@ export function ReportPage() {
         </div>
       ) : null}
 
+      {showCharts ? (
+        <>
       <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "var(--habit-text)" }}>
           {t("report.chart.sleep")}
@@ -313,7 +298,7 @@ export function ReportPage() {
 
         <div style={{ height: 220, marginTop: 10 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sleepSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+            <LineChart data={sleepSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
               <XAxis
                 dataKey="key"
                 tickLine={false}
@@ -331,20 +316,12 @@ export function ReportPage() {
                 tickFormatter={(v: number) => formatHMFromExtended(v)}
               />
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
-
-              <Area
-                type="monotone"
-                dataKey="range"
-                stroke="none"
-                fill={fillLight}
-                fillOpacity={0.55}
-                isAnimationActive
-              />
               <Line
                 type="monotone"
                 dataKey="sleepExt"
                 stroke={primary}
                 strokeWidth={2.5}
+                connectNulls={false}
                 dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
                 isAnimationActive
@@ -354,6 +331,7 @@ export function ReportPage() {
                 dataKey="wakeExt"
                 stroke={primary}
                 strokeWidth={2.5}
+                connectNulls={false}
                 dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
                 activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
                 isAnimationActive
@@ -362,7 +340,7 @@ export function ReportPage() {
                 content={<ReportSleepTooltip />}
                 cursor={{ stroke: "#d1d5db", strokeDasharray: "4 4" }}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
@@ -403,6 +381,23 @@ export function ReportPage() {
           </ResponsiveContainer>
         </div>
       </div>
+        </>
+      ) : (
+        <div
+          className="habit-row-card"
+          style={{
+            padding: "22px 18px",
+            marginBottom: 16,
+            textAlign: "center",
+            border: "1px dashed color-mix(in srgb, var(--color-primary) 28%, #e5e7eb)",
+            background: "color-mix(in srgb, var(--theme-primary-soft) 50%, #ffffff)",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--habit-text-secondary)" }}>
+            {t("report.chart.emptyHint")}
+          </p>
+        </div>
+      )}
 
       <h2 className="habit-section-title" style={{ marginTop: 4 }}>
         {t("report.ledger")}

@@ -5,10 +5,10 @@
 -- 可选：启用 uuid 函数（一般已启用）
 -- create extension if not exists "pgcrypto";
 
--- 1) 用户习惯 + 内嵌日志（含 customDone 打卡矩阵、钱包等）
+-- 1) 用户习惯 + 内嵌「日志」于 catalog（无单独 logs 表；含 customDone 打卡、customWallet、dayTimes 入睡/起床 ISO 等）
 create table if not exists public.user_habit_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  catalog jsonb not null default '{"v":1,"items":[],"customDone":{},"customWallet":0}'::jsonb,
+  catalog jsonb not null default '{"v":1,"items":[],"customDone":{},"customWallet":0,"dayTimes":{}}'::jsonb,
   updated_at timestamptz not null default now()
 );
 

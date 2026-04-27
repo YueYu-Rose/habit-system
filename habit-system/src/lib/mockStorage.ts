@@ -80,6 +80,7 @@ export function ensureMockSeedForPromotion(): void {
       items: getDefaultHabitItems(),
       customDone: {},
       customWallet: 0,
+      dayTimes: {},
     };
     saveHabitCatalog(s);
   }

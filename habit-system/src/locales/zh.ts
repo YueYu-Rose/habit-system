@@ -172,6 +172,8 @@ export const ZH = {
     "根据你近 7 天的数据：你在「找实习」主线上投入了最多精力，表现出色！但睡眠曲线波动较大，建议今晚 23:00 前放下手机，早点休息。",
   "report.chart.sleep": "作息节律（近 7 天）",
   "report.chart.points": "执行力趋势（近 7 天）",
+  "report.chart.emptyHint": "开始打卡，累积 7 天数据即可生成趋势图",
+  "report.sleepTooltip.noData": "当日无完整入睡/起床时间记录",
   "report.ledger": "积分流水（近 30 天）",
   "report.ledger.empty": "近 30 天暂无流水",
   "report.more": "更多记录",

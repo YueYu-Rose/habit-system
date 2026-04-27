@@ -27,11 +27,15 @@ export type HabitDef = {
   schedule?: HabitSchedule;
 };
 
+export type HabitDayTimes = { sleepIso?: string; wakeIso?: string };
+
 export type HabitCatalogState = {
   v: 1;
   items: HabitDef[];
   customDone: Record<string, Record<string, boolean>>;
   customWallet: number;
+  /** 按打卡日 YYYY-MM-DD 记录入睡/起床的 ISO 时间，供复盘与睡眠区间（跨午夜：睡在前一天、起在当天） */
+  dayTimes?: Record<string, HabitDayTimes>;
 };
 
 export const defaultHabitItemsZh: HabitDef[] = [
@@ -71,6 +75,7 @@ const empty = (): HabitCatalogState => ({
   items: getDefaultHabitItems(),
   customDone: {},
   customWallet: 0,
+  dayTimes: {},
 });
 
 function normalizeItem(it: HabitDef): HabitDef {
@@ -89,9 +94,21 @@ function parse(raw: string | null): HabitCatalogState {
     if (j.v !== 1 || !Array.isArray(j.items)) return empty();
     if (typeof j.customDone !== "object" || j.customDone == null) j.customDone = {};
     if (typeof j.customWallet !== "number" || !Number.isFinite(j.customWallet)) j.customWallet = 0;
+    if (typeof j.dayTimes !== "object" || j.dayTimes == null) j.dayTimes = {};
     if (j.items.length === 0) j.items = getDefaultHabitItems();
     j.items = j.items.map((x) => normalizeItem(x));
     return j;
+  } catch {
+    return empty();
+  }
+}
+
+/** 将远程 / Supabase `catalog` JSON 解析为与本地一致的结构 */
+export function habitCatalogStateFromJson(data: unknown): HabitCatalogState {
+  if (data == null) return empty();
+  try {
+    if (typeof data === "string") return parse(data);
+    return parse(JSON.stringify(data));
   } catch {
     return empty();
   }
@@ -160,11 +177,34 @@ export function applyLocalToggle(
       : state.items.map((it) =>
           it.id === habitId ? { ...it, streak: Math.max(0, (it.streak ?? 0) + streakDelta) } : it
         );
+  const dayTimes = { ...(state.dayTimes ?? {}) } as Record<string, HabitDayTimes>;
+  if (def.systemKey === "sleep") {
+    if (nowDone) {
+      dayTimes[date] = { ...dayTimes[date], sleepIso: new Date().toISOString() };
+    } else {
+      const cur = { ...dayTimes[date] } as HabitDayTimes;
+      delete cur.sleepIso;
+      if (cur.wakeIso) dayTimes[date] = cur;
+      else delete dayTimes[date];
+    }
+  }
+  if (def.systemKey === "wake") {
+    if (nowDone) {
+      dayTimes[date] = { ...dayTimes[date], wakeIso: new Date().toISOString() };
+    } else {
+      const cur = { ...dayTimes[date] } as HabitDayTimes;
+      delete cur.wakeIso;
+      if (cur.sleepIso) dayTimes[date] = cur;
+      else delete dayTimes[date];
+    }
+  }
+
   return {
     ...state,
     items,
     customDone: { ...state.customDone, [date]: day },
     customWallet: w,
+    dayTimes: Object.keys(dayTimes).length > 0 ? dayTimes : undefined,
   };
 }
 
