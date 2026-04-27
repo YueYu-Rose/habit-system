@@ -11,6 +11,7 @@ import type { User } from "@supabase/supabase-js";
 import { appConfig } from "../config/appConfig";
 import { initHabitThemeOnLoad } from "../theme/habitTheme";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase";
+import { classifySupabaseAuthError, type AuthErrorTransKey } from "../lib/authErrorI18n";
 import {
   clearAuthSession,
   loadAuthSession,
@@ -20,7 +21,11 @@ import {
 import { ensureMockSeedForPromotion } from "../lib/mockStorage";
 import { pullAllUserDataForUser, setRemoteDataUserId } from "../lib/userDataRemote";
 
-export type AuthResult = { ok: boolean; error?: string };
+export type LoginResult = { ok: true } | { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string };
+
+export type RegisterResult =
+  | { ok: true; needsEmailVerification: boolean }
+  | { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string };
 
 type AuthContextValue = {
   isAuthResolving: boolean;
@@ -29,10 +34,8 @@ type AuthContextValue = {
   user: User | null;
   /** 无 Supabase 时沿用本地 mock 会话 token */
   token: string;
-  login: (email: string, password: string) => Promise<AuthResult>;
-  register: (email: string, code: string, password: string) => Promise<AuthResult>;
-  sendLoginOtp: (email: string) => Promise<AuthResult>;
-  completeLoginWithOtp: (email: string, token: string) => Promise<AuthResult>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  register: (email: string, password: string) => Promise<RegisterResult>;
   logout: () => void;
 };
 
@@ -65,7 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setResolving(false);
     });
-    const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange(async (event, session) => {
       const u = session?.user ?? null;
       setUser(u);
       setRemoteDataUserId(u?.id ?? null);
@@ -91,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ensureMockSeedForPromotion();
   }, [resolving, user, mockSession.loggedIn]);
 
-  const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     const em = email.trim();
     const pw = password.trim();
-    if (!em || !pw) return { ok: false, error: "Missing email or password" };
+    if (!em || !pw) {
+      return { ok: false, errorKey: "auth.error.missingFields" };
+    }
     if (!isSupabaseConfigured()) {
       const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
       saveAuthSession(next);
@@ -102,60 +109,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initHabitThemeOnLoad(appConfig.mode);
       return { ok: true };
     }
-    const { data, error } = await getSupabase()!.auth.signInWithPassword({ email: em, password: pw });
-    if (error) return { ok: false, error: error.message };
-    void data;
+    const { error } = await getSupabase()!.auth.signInWithPassword({ email: em, password: pw });
+    if (error) {
+      const { key, detail } = classifySupabaseAuthError(error);
+      return { ok: false, errorKey: key, errorDetail: detail };
+    }
     initHabitThemeOnLoad(appConfig.mode);
     return { ok: true };
   }, []);
 
-  const register = useCallback(async (email: string, code: string, password: string): Promise<AuthResult> => {
+  const register = useCallback(async (email: string, password: string): Promise<RegisterResult> => {
     const em = email.trim();
     const pw = password.trim();
+    if (!em || !pw) {
+      return { ok: false, errorKey: "auth.error.missingFields" };
+    }
     if (!isSupabaseConfigured()) {
-      if (!em || !code.trim() || !pw) return { ok: false, error: "Please fill in all fields" };
       const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
       saveAuthSession(next);
       setMockSession(next);
       initHabitThemeOnLoad(appConfig.mode);
-      return { ok: true };
+      return { ok: true, needsEmailVerification: false };
     }
-    if (!em || !pw) return { ok: false, error: "Please fill in email and password" };
-    const { error } = await getSupabase()!.auth.signUp({ email: em, password: pw });
-    if (error) return { ok: false, error: error.message };
-    initHabitThemeOnLoad(appConfig.mode);
-    return { ok: true };
-  }, []);
-
-  const sendLoginOtp = useCallback(async (email: string): Promise<AuthResult> => {
-    const em = email.trim();
-    if (!em) return { ok: false, error: "Email required" };
-    if (!isSupabaseConfigured()) {
-      return { ok: false, error: "OTP login requires Supabase" };
-    }
-    const { error } = await getSupabase()!.auth.signInWithOtp({
+    const origin = typeof window !== "undefined" ? window.location.origin : undefined;
+    const { data, error } = await getSupabase()!.auth.signUp({
       email: em,
-      options: { shouldCreateUser: true },
+      password: pw,
+      options: origin ? { emailRedirectTo: origin } : undefined,
     });
-    if (error) return { ok: false, error: error.message };
-    return { ok: true };
-  }, []);
-
-  const completeLoginWithOtp = useCallback(async (email: string, token: string): Promise<AuthResult> => {
-    const em = email.trim();
-    const t = token.trim();
-    if (!em || !t) return { ok: false, error: "Email and code required" };
-    if (!isSupabaseConfigured()) {
-      return { ok: false, error: "OTP login requires Supabase" };
+    if (error) {
+      const { key, detail } = classifySupabaseAuthError(error);
+      return { ok: false, errorKey: key, errorDetail: detail };
     }
-    const { error } = await getSupabase()!.auth.verifyOtp({
-      email: em,
-      token: t,
-      type: "email",
-    });
-    if (error) return { ok: false, error: error.message };
+    const needsEmailVerification = !data.session;
+    if (data.session) {
+      setUser(data.session.user);
+      setRemoteDataUserId(data.session.user.id);
+      void pullAllUserDataForUser(data.session.user.id);
+    }
     initHabitThemeOnLoad(appConfig.mode);
-    return { ok: true };
+    return { ok: true, needsEmailVerification };
   }, []);
 
   const logout = useCallback(() => {
@@ -181,22 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       login,
       register,
-      sendLoginOtp,
-      completeLoginWithOtp,
       logout,
     }),
-    [
-      resolving,
-      isLoggedIn,
-      email,
-      user,
-      token,
-      login,
-      register,
-      sendLoginOtp,
-      completeLoginWithOtp,
-      logout,
-    ]
+    [resolving, isLoggedIn, email, user, token, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -206,4 +186,16 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth 必须在 AuthProvider 内使用");
   return ctx;
+}
+
+/** 将登录/注册错误结果转为可展示的文案（含 i18n 与 {{detail}}） */
+export function formatAuthErrorForUi(
+  r: { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string },
+  t: (key: import("../locales/zh").TransKey, vars?: Record<string, string | number>) => string
+): string {
+  if (r.errorKey === "auth.error.generic") {
+    const d = r.errorDetail?.trim();
+    return t("auth.error.generic", { detail: d && d.length > 0 ? d : "—" });
+  }
+  return t(r.errorKey);
 }
