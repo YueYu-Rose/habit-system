@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -32,6 +33,14 @@ type AuthContextValue = {
   user: User | null;
   /** 无 Supabase 时沿用本地 mock 会话 token */
   token: string;
+  /** Session 引导失败（可重试） */
+  authBootstrapError: string | null;
+  /** 超过 5s 仍未完成引导 */
+  authBootstrapTimedOut: boolean;
+  /** 登录后拉取习惯/奖励/主线失败（不阻塞进入应用） */
+  remoteDataPullError: string | null;
+  retryAuthBootstrap: () => void;
+  clearRemoteDataPullError: () => void;
   loginWithPassword: (email: string, password: string) => Promise<LoginResult>;
   /** 注册：向邮箱发送验证码（新用户应创建） */
   sendRegisterOtp: (email: string) => Promise<SendOtpResult>;
@@ -47,28 +56,101 @@ const mockToken = () => `habit_mwt_${Date.now()}_${Math.random().toString(36).sl
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [resolving, setResolving] = useState(!!isSupabaseConfigured());
+  const [authBootstrapError, setAuthBootstrapError] = useState<string | null>(null);
+  const [authBootstrapTimedOut, setAuthBootstrapTimedOut] = useState(false);
+  const [remoteDataPullError, setRemoteDataPullError] = useState<string | null>(null);
+  const [sessionBootKey, setSessionBootKey] = useState(0);
   const [mockSession, setMockSession] = useState<AuthSession>(() => {
     if (isSupabaseConfigured()) {
       return { loggedIn: false, email: "", token: "" };
     }
     return loadAuthSession();
   });
+  const bootstrapCompleteRef = useRef(false);
+
+  const clearRemoteDataPullError = useCallback(() => setRemoteDataPullError(null), []);
+
+  const retryAuthBootstrap = useCallback(() => {
+    if (!isSupabaseConfigured()) return;
+    setAuthBootstrapError(null);
+    setAuthBootstrapTimedOut(false);
+    setRemoteDataPullError(null);
+    setResolving(true);
+    setSessionBootKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
       setResolving(false);
       return;
     }
-    const sb = getSupabase()!;
-    void sb.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      setRemoteDataUserId(u?.id ?? null);
-      if (u) {
-        void pullAllUserDataForUser(u.id);
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    bootstrapCompleteRef.current = false;
+
+    const finishBootstrap = () => {
+      if (!cancelled) {
+        bootstrapCompleteRef.current = true;
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
+        setResolving(false);
       }
-      setResolving(false);
-    });
+    };
+
+    timeoutId = setTimeout(() => {
+      if (!bootstrapCompleteRef.current && !cancelled) {
+        console.warn("[auth] bootstrap timeout 5s — unblocking UI");
+        setResolving(false);
+        setAuthBootstrapTimedOut(true);
+      }
+    }, 5000);
+
+    const run = async () => {
+      console.log("1. Fetching session...");
+      try {
+        const sb = getSupabase()!;
+        const {
+          data: { session },
+          error: sessionError,
+        } = await sb.auth.getSession();
+
+        if (cancelled) return;
+
+        if (sessionError) {
+          console.error("🔥 Supabase Fetch Error:", sessionError);
+          setAuthBootstrapError(sessionError.message || "getSession error");
+          return;
+        }
+
+        const u = session?.user ?? null;
+        setUser(u);
+        setRemoteDataUserId(u?.id ?? null);
+        setAuthBootstrapTimedOut(false);
+
+        if (u) {
+          console.log("2. Fetching habits (pullAllUserData)...");
+          try {
+            await pullAllUserDataForUser(u.id);
+            setRemoteDataPullError(null);
+            setAuthBootstrapError(null);
+          } catch (e) {
+            console.error("🔥 Supabase Fetch Error:", e);
+            const msg = e instanceof Error ? e.message : String(e);
+            setRemoteDataPullError(msg);
+          }
+        }
+      } catch (e) {
+        console.error("🔥 Supabase Fetch Error:", e);
+        const msg = e instanceof Error ? e.message : String(e);
+        setAuthBootstrapError(msg);
+      } finally {
+        finishBootstrap();
+      }
+    };
+
+    void run();
+
+    const sb = getSupabase()!;
     const {
       data: { subscription },
     } = sb.auth.onAuthStateChange(async (event, session) => {
@@ -76,17 +158,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       setRemoteDataUserId(u?.id ?? null);
       if (event === "SIGNED_IN" && u) {
+        console.log("2. Fetching habits (onAuthStateChange SIGNED_IN)...");
         try {
           await pullAllUserDataForUser(u.id);
+          setRemoteDataPullError(null);
         } catch (e) {
-          console.error("[auth] pull user data", e);
+          console.error("🔥 Supabase Fetch Error:", e);
+          const msg = e instanceof Error ? e.message : String(e);
+          setRemoteDataPullError(msg);
         }
       }
     });
+
     return () => {
+      cancelled = true;
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [sessionBootKey]);
 
   /* 推广未登录时保留 LocalStorage Mock 种子 */
   useEffect(() => {
@@ -189,6 +278,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     clearAuthSession();
     setMockSession({ loggedIn: false, email: "", token: "" });
+    setAuthBootstrapError(null);
+    setAuthBootstrapTimedOut(false);
+    setRemoteDataPullError(null);
   }, []);
 
   const isLoggedIn = isSupabaseConfigured() ? Boolean(user) : mockSession.loggedIn;
@@ -202,12 +294,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       user: isSupabaseConfigured() ? user : null,
       token,
+      authBootstrapError,
+      authBootstrapTimedOut,
+      remoteDataPullError,
+      retryAuthBootstrap,
+      clearRemoteDataPullError,
       loginWithPassword,
       sendRegisterOtp,
       registerWithOtpAndPassword,
       logout,
     }),
-    [resolving, isLoggedIn, email, user, token, loginWithPassword, sendRegisterOtp, registerWithOtpAndPassword, logout]
+    [
+      resolving,
+      isLoggedIn,
+      email,
+      user,
+      token,
+      authBootstrapError,
+      authBootstrapTimedOut,
+      remoteDataPullError,
+      retryAuthBootstrap,
+      clearRemoteDataPullError,
+      loginWithPassword,
+      sendRegisterOtp,
+      registerWithOtpAndPassword,
+      logout,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

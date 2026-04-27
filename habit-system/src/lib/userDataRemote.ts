@@ -40,15 +40,25 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
 
+  console.log("2. Fetching remote rows (user_habit_data, user_reward_data, user_mainline_data)…");
   const [hRes, rRes, mRes] = await Promise.all([
     sb.from("user_habit_data").select("catalog,updated_at").eq("user_id", userId).maybeSingle(),
     sb.from("user_reward_data").select("rows,updated_at").eq("user_id", userId).maybeSingle(),
     sb.from("user_mainline_data").select("state,updated_at").eq("user_id", userId).maybeSingle(),
   ]);
 
-  if (hRes.error) throw hRes.error;
-  if (rRes.error) throw rRes.error;
-  if (mRes.error) throw mRes.error;
+  if (hRes.error) {
+    console.error("🔥 Supabase Fetch Error:", hRes.error);
+    throw hRes.error;
+  }
+  if (rRes.error) {
+    console.error("🔥 Supabase Fetch Error:", rRes.error);
+    throw rRes.error;
+  }
+  if (mRes.error) {
+    console.error("🔥 Supabase Fetch Error:", mRes.error);
+    throw mRes.error;
+  }
 
   const hRow = hRes.data;
   const rRow = rRes.data;
