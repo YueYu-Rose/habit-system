@@ -10,30 +10,72 @@ import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 
 type Reward = RewardCatalogItem;
 
-type CostPreset = 10 | 20 | 50 | "custom";
+const COST_CHIPS = [20, 50, 100, 500] as const;
+type CostPreset = (typeof COST_CHIPS)[number] | "custom";
 
 const REWARD_TIERS: {
   id: "instant" | "restore" | "upgrade" | "mainline";
   titleKey: "rewards.tier.instant" | "rewards.tier.restore" | "rewards.tier.upgrade" | "rewards.tier.milestone";
+  suggestKey: "rewards.tier.suggest.instant" | "rewards.tier.suggest.restore" | "rewards.tier.suggest.upgrade" | "rewards.tier.suggest.mainline";
   match: string;
   matchEn: string;
 }[] = [
-  { id: "instant", titleKey: "rewards.tier.instant", match: "即时奖励", matchEn: "Instant" },
-  { id: "restore", titleKey: "rewards.tier.restore", match: "恢复配额", matchEn: "Restore" },
-  { id: "upgrade", titleKey: "rewards.tier.upgrade", match: "升级奖励", matchEn: "Upgrade" },
-  { id: "mainline", titleKey: "rewards.tier.milestone", match: "主线兑现", matchEn: "Milestone" },
+  {
+    id: "instant",
+    titleKey: "rewards.tier.instant",
+    suggestKey: "rewards.tier.suggest.instant",
+    match: "即时奖励",
+    matchEn: "Instant",
+  },
+  {
+    id: "restore",
+    titleKey: "rewards.tier.restore",
+    suggestKey: "rewards.tier.suggest.restore",
+    match: "恢复配额",
+    matchEn: "Restore",
+  },
+  {
+    id: "upgrade",
+    titleKey: "rewards.tier.upgrade",
+    suggestKey: "rewards.tier.suggest.upgrade",
+    match: "升级奖励",
+    matchEn: "Upgrade",
+  },
+  {
+    id: "mainline",
+    titleKey: "rewards.tier.milestone",
+    suggestKey: "rewards.tier.suggest.mainline",
+    match: "主线兑现",
+    matchEn: "Milestone",
+  },
 ];
+
+const SUGGEST_PTS: Record<(typeof REWARD_TIERS)[number]["id"], number> = {
+  instant: 20,
+  restore: 50,
+  upgrade: 100,
+  mainline: 500,
+};
 
 function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
   return r.tier === tier.match || r.tier === tier.matchEn;
 }
 
+function tierIdFromRow(r: Reward): (typeof REWARD_TIERS)[number]["id"] {
+  const found = REWARD_TIERS.find((t) => rowInTier(r, t));
+  return found?.id ?? "instant";
+}
+
+function tierStringForLang(tierId: (typeof REWARD_TIERS)[number]["id"], lang: "zh" | "en"): string {
+  const def = REWARD_TIERS.find((t) => t.id === tierId);
+  if (!def) return lang === "en" ? "Instant" : "即时奖励";
+  return lang === "en" ? def.matchEn : def.match;
+}
+
 export function RewardsPage() {
   const { t, lang } = useLanguage();
   const { toast } = useHabitToast();
-  const { mode, showExternalIntegration } = useAppConfig();
-  const isPromo = mode === "PROMOTION";
-  const newRewardTier = isPromo ? (lang === "en" ? "Instant" : "即时奖励") : "即时奖励";
+  const { showExternalIntegration } = useAppConfig();
   const { getEffectiveAvailable, spendableDelta, trySpendFromLocalPool, addToLocalPool } = useMainlineLoop();
   const [rows, setRows] = useState<Reward[]>(() => loadRewardCatalog());
   const [bal, setBal] = useState<{ available: number; lifetime: number } | null>(null);
@@ -85,7 +127,7 @@ export function RewardsPage() {
     [addToLocalPool, t, toast]
   );
 
-  const redeem = async (id: number, cost: number) => {
+  const redeem = async (_id: number, cost: number) => {
     setErr(null);
     const api = bal?.available ?? 0;
     if (getEffectiveAvailable(api) < cost) return;
@@ -114,14 +156,17 @@ export function RewardsPage() {
     setEditing(null);
   };
 
-  const saveReward = async (payload: { title: string; cost_points: number }) => {
+  const saveReward = async (payload: { title: string; cost_points: number; tier: string }) => {
     const title0 = payload.title.trim();
     const cost = Math.max(5, Math.round(payload.cost_points));
-    if (!title0 || !cost) return;
+    const tier0 = payload.tier.trim();
+    if (!title0 || !cost || !tier0) return;
     const editingNow = editing;
 
     if (editingNow) {
-      const updated = rows.map((r) => (r.id === editingNow.id ? { ...r, title: title0, cost_points: cost } : r));
+      const updated = rows.map((r) =>
+        r.id === editingNow.id ? { ...r, title: title0, cost_points: cost, tier: tier0 } : r
+      );
       persistRows(updated);
       closeSheet();
       toast({ title: t("rewards.toast.saved"), points: 0 });
@@ -132,7 +177,7 @@ export function RewardsPage() {
       id: nextRewardId(rows),
       title: title0,
       cost_points: cost,
-      tier: newRewardTier,
+      tier: tier0,
     };
     const created = [row, ...rows];
     persistRows(created);
@@ -244,6 +289,7 @@ export function RewardsPage() {
           <RewardBottomSheet
             key={editing ? `e-${editing.id}` : "create"}
             initialData={editing}
+            lang={lang}
             onClose={closeSheet}
             onSubmit={saveReward}
             onDelete={editing ? deleteReward : undefined}
@@ -256,25 +302,36 @@ export function RewardsPage() {
 
 function RewardBottomSheet({
   initialData,
+  lang,
   onClose,
   onSubmit,
   onDelete,
 }: {
   initialData?: Reward | null;
+  lang: "zh" | "en";
   onClose: () => void;
-  onSubmit: (payload: { title: string; cost_points: number }) => void;
+  onSubmit: (payload: { title: string; cost_points: number; tier: string }) => void;
   onDelete?: () => void;
 }) {
   const { t } = useLanguage();
   const isEdit = Boolean(initialData);
   const [title, setTitle] = useState(initialData?.title ?? "");
+  const [tierId, setTierId] = useState<(typeof REWARD_TIERS)[number]["id"]>(() =>
+    initialData ? tierIdFromRow(initialData) : "instant"
+  );
+
   const [costPreset, setCostPreset] = useState<CostPreset>(() => {
     const c = initialData?.cost_points;
-    if (c === 10 || c === 20 || c === 50) return c;
+    if (c != null && (COST_CHIPS as readonly number[]).includes(c)) {
+      return c as CostPreset;
+    }
     return "custom";
   });
   const [customCost, setCustomCost] = useState(
-    initialData && ![10, 20, 50].includes(initialData.cost_points) ? initialData.cost_points : 15
+    () =>
+      initialData && !(COST_CHIPS as readonly number[]).includes(initialData.cost_points)
+        ? initialData.cost_points
+        : 20
   );
 
   const resolvedCost =
@@ -282,9 +339,21 @@ function RewardBottomSheet({
 
   const canSave = title.trim().length > 0 && resolvedCost > 0;
 
+  useEffect(() => {
+    if (isEdit) return;
+    const s = SUGGEST_PTS[tierId];
+    if ((COST_CHIPS as readonly number[]).includes(s)) {
+      setCostPreset(s as CostPreset);
+    } else {
+      setCostPreset("custom");
+      setCustomCost(s);
+    }
+  }, [tierId, isEdit]);
+
   const save = () => {
     if (!title.trim() || resolvedCost <= 0) return;
-    onSubmit({ title: title.trim(), cost_points: resolvedCost });
+    const tier = tierStringForLang(tierId, lang);
+    onSubmit({ title: title.trim(), cost_points: resolvedCost, tier });
   };
 
   return (
@@ -306,9 +375,41 @@ function RewardBottomSheet({
         autoComplete="off"
       />
 
+      <fieldset className="habit-reward-tier-fieldset">
+        <legend className="habit-form-label habit-reward-tier-legend">
+          {t("rewards.field.category")}
+        </legend>
+        <div className="habit-reward-tier-list" role="radiogroup" aria-label={t("rewards.field.category")}>
+          {REWARD_TIERS.map((tier) => {
+            const selected = tierId === tier.id;
+            return (
+              <label
+                key={tier.id}
+                className={`habit-reward-tier-row${selected ? " habit-reward-tier-row--selected" : ""}`}
+              >
+                <input
+                  className="habit-reward-tier-radio"
+                  type="radio"
+                  name="habit-reward-tier"
+                  value={tier.id}
+                  checked={selected}
+                  onChange={() => setTierId(tier.id)}
+                />
+                <span className="habit-reward-tier-row__text">
+                  <span className="habit-reward-tier-row__title">{t(tier.titleKey)}</span>
+                  <span className="habit-reward-tier-row__hint">
+                    {t(tier.suggestKey)}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <span className="habit-form-label">{t("rewards.field.cost")}</span>
       <div className="habit-point-chips">
-        {([10, 20, 50] as const).map((n) => (
+        {COST_CHIPS.map((n) => (
           <button
             key={n}
             type="button"

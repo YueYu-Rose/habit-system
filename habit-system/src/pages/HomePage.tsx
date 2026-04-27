@@ -112,7 +112,7 @@ export function HomePage() {
   const { catalog, removeHabit, addHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
 
   const [d, setD] = useState<Summary | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy] = useState<string | null>(null);
   const [ext, setExt] = useState<{ total: number; completed: number; rate: number } | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);

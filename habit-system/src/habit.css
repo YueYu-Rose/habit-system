@@ -1868,6 +1868,76 @@ html:lang(en) .habit-tagline {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-primary) 20%, transparent);
 }
 
+/* 新建奖励：分类单选 */
+.habit-reward-tier-fieldset {
+  border: none;
+  margin: 0 0 4px;
+  padding: 0;
+  min-width: 0;
+}
+
+.habit-reward-tier-legend {
+  width: 100%;
+}
+
+.habit-reward-tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.habit-reward-tier-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.habit-reward-tier-row--selected {
+  border-color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-soft) 90%, #ffffff);
+}
+
+.habit-reward-tier-radio {
+  margin: 2px 0 0;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--theme-primary, #7c2d2d);
+  cursor: pointer;
+}
+
+.habit-reward-tier-row__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.habit-reward-tier-row__title {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--habit-text);
+  line-height: 1.3;
+}
+
+.habit-reward-tier-row__hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--habit-text-secondary);
+}
+
 /* 分值快捷筹码 */
 .habit-point-chips {
   display: flex;
