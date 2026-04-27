@@ -191,7 +191,7 @@ export const EN: Record<TransKey, string> = {
   "rewards.btn.saveNew": "Save",
   "rewards.btn.saveEdit": "Save changes",
   "rewards.btn.delete": "Delete reward",
-  "report.lead": "Scroll for charts and the last 30 days of points",
+  "report.lead": "Scroll for charts and your habit check-in log",
   "report.ai.title": "AI weekly insight",
   "report.ai.body":
     "From the last 7 days: you invested the most in your internship / job search — great focus. Your sleep is uneven; try putting your phone down before 11pm tonight.",
@@ -202,8 +202,10 @@ export const EN: Record<TransKey, string> = {
   "report.chart.demoShort": "Demo",
   "report.chart.demoBadge": "Sample (Demo) — your real trend appears as you check in",
   "report.sleepTooltip.noData": "No complete sleep & wake times that day",
-  "report.ledger": "Point ledger (30 days)",
-  "report.ledger.empty": "No entries in the last 30 days",
+  "report.ledger": "Habit check-ins (30 days)",
+  "report.ledger.scope":
+    "Lists completions from your habit list only (the habit point pool). Main-quest quick adds, external to-do sync, and reward redemptions are not shown here — “available” on Home sums multiple sources.",
+  "report.ledger.empty": "No habit check-ins in the last 30 days",
   "report.more": "More history",
   "report.footer": "For redemptions and daily settlement go to",
   "report.sleepTooltip.asleep": "Asleep: ",

@@ -411,6 +411,9 @@ export function ReportPage() {
       <h2 className="habit-section-title" style={{ marginTop: 4 }}>
         {t("report.ledger")}
       </h2>
+      <p className="habit-muted" style={{ fontSize: 12, lineHeight: 1.5, margin: "4px 0 10px" }}>
+        {t("report.ledger.scope")}
+      </p>
       <div className="habit-wallet-sheet" style={{ marginBottom: 12 }}>
         <ul className="habit-wallet-list">
           {ledger.map((r) => (
