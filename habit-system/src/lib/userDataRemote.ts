@@ -2,6 +2,7 @@ import { getSupabase, isSupabaseConfigured } from "./supabase";
 import {
   HABIT_CATALOG_STORAGE_KEY,
   loadHabitCatalog,
+  mergeHabitCatalogOnPull,
   type HabitCatalogState,
 } from "./habitListStorage";
 import { loadRewardCatalog, REWARD_CATALOG_STORAGE_KEY, type RewardCatalogItem } from "./rewardCatalogStorage";
@@ -83,7 +84,8 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
   const hPayload = hRow ? (hRow as Record<string, unknown>)[REMOTE_HABIT_COLUMNS.payload] : undefined;
   if (hPayload && typeof hPayload === "object") {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(HABIT_CATALOG_STORAGE_KEY, JSON.stringify(hPayload));
+      const merged = mergeHabitCatalogOnPull(localH, hPayload);
+      localStorage.setItem(HABIT_CATALOG_STORAGE_KEY, JSON.stringify(merged));
     }
   } else {
     await pushHabitCatalogToRemote(userId, localH);

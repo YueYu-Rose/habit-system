@@ -56,6 +56,16 @@ export function habitRewardPoints(def: HabitDef): number {
   return Math.round(n);
 }
 
+/** 打卡一次实际进 customWallet 的分：历史模板将运动标为 0 分时仍按 15 分计 */
+const EXERCISE_DEFAULT_POINTS = 15;
+
+export function getPointsForHabitComplete(def: HabitDef): number {
+  const w = habitRewardPoints(def);
+  if (w > 0) return w;
+  if (def.systemKey === "exercise") return EXERCISE_DEFAULT_POINTS;
+  return 0;
+}
+
 export type HabitCatalogState = {
   v: 1;
   items: HabitDef[];
@@ -154,7 +164,8 @@ function normalizeItem(it: HabitDef): HabitDef {
   const schedule: HabitSchedule = it.schedule ?? { type: "daily" };
   const streak = Number.isFinite(it.streak) ? Math.max(0, Math.round(it.streak)) : 0;
   const targetType: HabitTargetType = it.targetType === "time" ? "time" : "boolean";
-  const completePoints = normalizeSavedCompletePoints(it.completePoints);
+  let completePoints = normalizeSavedCompletePoints(it.completePoints);
+  if (it.systemKey === "exercise" && completePoints === 0) completePoints = EXERCISE_DEFAULT_POINTS;
   const penaltyRaw = it.penalty;
   const penalty =
     penaltyRaw == null || penaltyRaw === "" || (typeof penaltyRaw === "string" && penaltyRaw.trim() === "")
@@ -202,6 +213,16 @@ export function habitCatalogStateFromJson(data: unknown): HabitCatalogState {
   }
 }
 
+/**
+ * 拉取远端后合并：customWallet 取 max(本地, 远端)，避免未推送到服务器的本地加分被旧快照整表覆盖
+ */
+export function mergeHabitCatalogOnPull(local: HabitCatalogState, remoteData: unknown): HabitCatalogState {
+  const remote = habitCatalogStateFromJson(remoteData);
+  const wLocal = Math.max(0, Number.isFinite(local.customWallet) ? local.customWallet : 0);
+  const wRemote = Math.max(0, Number.isFinite(remote.customWallet) ? remote.customWallet : 0);
+  return { ...remote, customWallet: Math.max(wLocal, wRemote) };
+}
+
 export function loadHabitCatalog(): HabitCatalogState {
   if (typeof localStorage === "undefined") return empty();
   return parse(localStorage.getItem(KEY));
@@ -246,12 +267,14 @@ function applyTimeHabitCheckIn(
   } else {
     delete day[habitId];
   }
+  const pts = getPointsForHabitComplete(def);
+  const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
   let w = state.customWallet || 0;
   if (!wasDone && nowDone) {
-    w += def.completePoints;
+    w += pts;
   } else if (wasDone && !nowDone) {
-    w -= def.completePoints;
-    if (def.penalty > 0) w -= def.penalty;
+    w -= pts;
+    if (pen > 0) w -= pen;
   }
   const streakDelta = !wasDone && nowDone ? 1 : wasDone && !nowDone ? -1 : 0;
   const items =
@@ -313,7 +336,7 @@ export function applyLocalToggle(
   } else {
     delete day[habitId];
   }
-  const pts = habitRewardPoints(def);
+  const pts = getPointsForHabitComplete(def);
   const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
   let w = state.customWallet || 0;
   if (!wasDone && nowDone) {

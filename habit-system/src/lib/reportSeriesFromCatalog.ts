@@ -1,6 +1,7 @@
 import { addDays, todayIsoLocal } from "./dateLocal";
 import {
   getCustomDoneForDate,
+  getPointsForHabitComplete,
   getWeekdayForIsoDate,
   isHabitDueOnWeekday,
   type HabitCatalogState,
@@ -37,7 +38,7 @@ function isoToExtendedMinutes(iso: string): number | null {
 }
 
 /**
- * 一日净积分：当日应打卡的项中，完成加 completePoints，未完成且带 penalty 则扣 penalty
+ * 一日净积分：当日应打卡的项中，完成加「结算分」（含运动 0 分按 15），未完成且带 penalty 则扣 penalty
  */
 function netPointsForDate(state: HabitCatalogState, date: string): number {
   const w = getWeekdayForIsoDate(date);
@@ -45,7 +46,7 @@ function netPointsForDate(state: HabitCatalogState, date: string): number {
   for (const def of state.items) {
     if (!isHabitDueOnWeekday(def, w)) continue;
     const done = getCustomDoneForDate(state, date, def.id);
-    if (done) net += def.completePoints;
+    if (done) net += getPointsForHabitComplete(def);
     else if (def.penalty > 0) net -= def.penalty;
   }
   return net;

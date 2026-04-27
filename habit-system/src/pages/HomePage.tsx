@@ -14,7 +14,7 @@ import {
   isHabitDueOnWeekday,
   type HabitCatalogState,
   type HabitDef,
-  habitRewardPoints,
+  getPointsForHabitComplete,
 } from "../lib/habitListStorage";
 import { todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
 import type { TransKey } from "../locales/zh";
@@ -206,7 +206,7 @@ export function HomePage() {
       const was = getDone(def, daily, catalog, day);
       const now = !was;
       toggleLocalHabit(day, def, was, now, clockIso);
-      const pts = habitRewardPoints(def);
+      const pts = getPointsForHabitComplete(def);
       const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
       const after =
         was && !now ? -pts - pen : !was && now ? pts : 0;
