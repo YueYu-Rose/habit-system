@@ -8,6 +8,9 @@ export type AuthErrorTransKey = Extract<
   | "auth.error.weakPassword"
   | "auth.error.invalidCredentials"
   | "auth.error.invalidEmail"
+  | "auth.error.invalidOtp"
+  | "auth.error.missingEmail"
+  | "auth.error.missingOtp"
   | "auth.error.rateLimit"
   | "auth.error.network"
   | "auth.error.missingFields"
@@ -42,6 +45,12 @@ export function classifySupabaseAuthError(err: RawAuth | null | undefined): {
   }
   if (code === "invalid_credentials" || /invalid login credentials|invalid email or password|wrong password/i.test(lower)) {
     return { key: "auth.error.invalidCredentials" };
+  }
+  if (
+    code === "otp_expired" ||
+    /invalid token|invalid otp|token has expired|otp|verification code|wrong code/i.test(lower)
+  ) {
+    return { key: "auth.error.invalidOtp" };
   }
   if (code === "email_address_invalid" || /invalid email|email format|email address is invalid/i.test(lower)) {
     return { key: "auth.error.invalidEmail" };

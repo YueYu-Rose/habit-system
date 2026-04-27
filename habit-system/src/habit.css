@@ -1793,6 +1793,110 @@ html:lang(en) .habit-tagline {
   margin: 0 0 14px;
   color: var(--habit-text-secondary);
   font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+/* 全 OTP 登录：蓝色强调输入与主按钮，移动端大触控区 */
+.habit-input-minimal--auth-otp {
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  border-bottom: 1px solid #dbeafe;
+  padding: 14px 14px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+}
+
+.habit-input-minimal--auth-otp:focus {
+  border-color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 20%, transparent);
+}
+
+.habit-auth-otp-actions {
+  margin-bottom: 8px;
+}
+
+.habit-auth-otp-btn {
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 15px 18px;
+  min-height: 50px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s;
+}
+
+.habit-auth-otp-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.habit-auth-otp-btn--send {
+  margin-bottom: 0;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  box-shadow: 0 1px 0 rgba(37, 99, 235, 0.12);
+}
+
+.habit-auth-otp-btn--send:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.habit-auth-otp-btn--primary {
+  margin-top: 4px;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px color-mix(in srgb, #2563eb 35%, transparent);
+}
+
+.habit-auth-otp-btn--primary:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.habit-auth-otp-digits {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-align: center;
+  padding: 16px 14px 16px 22px;
+  border-radius: 12px;
+  border: 2px solid #3b82f6;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.habit-auth-otp-digits::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+
+.habit-auth-otp-digits:focus {
+  background: #ffffff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #3b82f6 22%, transparent);
+}
+
+.habit-auth-otp-micro {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--habit-text-secondary);
 }
 
 /* 注册 · 验证码：横向 flex，输入区占满剩余宽度，发送按钮不压缩、不换行 */

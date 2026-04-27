@@ -23,9 +23,7 @@ import { pullAllUserDataForUser, setRemoteDataUserId } from "../lib/userDataRemo
 
 export type LoginResult = { ok: true } | { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string };
 
-export type RegisterResult =
-  | { ok: true; needsEmailVerification: boolean }
-  | { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string };
+export type SendOtpResult = { ok: true } | { ok: false; errorKey: AuthErrorTransKey; errorDetail?: string };
 
 type AuthContextValue = {
   isAuthResolving: boolean;
@@ -34,8 +32,8 @@ type AuthContextValue = {
   user: User | null;
   /** 无 Supabase 时沿用本地 mock 会话 token */
   token: string;
-  login: (email: string, password: string) => Promise<LoginResult>;
-  register: (email: string, password: string) => Promise<RegisterResult>;
+  sendEmailOtp: (email: string, shouldCreateUser: boolean) => Promise<SendOtpResult>;
+  verifyEmailOtp: (email: string, token: string) => Promise<LoginResult>;
   logout: () => void;
 };
 
@@ -96,11 +94,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ensureMockSeedForPromotion();
   }, [resolving, user, mockSession.loggedIn]);
 
-  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+  const sendEmailOtp = useCallback(async (email: string, shouldCreateUser: boolean): Promise<SendOtpResult> => {
     const em = email.trim();
-    const pw = password.trim();
-    if (!em || !pw) {
-      return { ok: false, errorKey: "auth.error.missingFields" };
+    if (!em) {
+      return { ok: false, errorKey: "auth.error.missingEmail" };
+    }
+    if (!isSupabaseConfigured()) {
+      return { ok: true };
+    }
+    const { error } = await getSupabase()!.auth.signInWithOtp({
+      email: em,
+      options: { shouldCreateUser },
+    });
+    if (error) {
+      const { key, detail } = classifySupabaseAuthError(error);
+      return { ok: false, errorKey: key, errorDetail: detail };
+    }
+    return { ok: true };
+  }, []);
+
+  const verifyEmailOtp = useCallback(async (email: string, token: string): Promise<LoginResult> => {
+    const em = email.trim();
+    const raw = token.replace(/\D/g, "");
+    if (!em) {
+      return { ok: false, errorKey: "auth.error.missingEmail" };
+    }
+    if (!raw) {
+      return { ok: false, errorKey: "auth.error.missingOtp" };
+    }
+    if (!/^\d{8}$/.test(raw)) {
+      return { ok: false, errorKey: "auth.error.invalidOtp" };
     }
     if (!isSupabaseConfigured()) {
       const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
@@ -109,46 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initHabitThemeOnLoad(appConfig.mode);
       return { ok: true };
     }
-    const { error } = await getSupabase()!.auth.signInWithPassword({ email: em, password: pw });
+    /** 邮箱数字验证码：GoTrue 使用 `type: 'email'`，与 signInWithOtp 的登录/注册场景均一致。 */
+    const { error } = await getSupabase()!.auth.verifyOtp({ email: em, token: raw, type: "email" });
     if (error) {
       const { key, detail } = classifySupabaseAuthError(error);
       return { ok: false, errorKey: key, errorDetail: detail };
     }
     initHabitThemeOnLoad(appConfig.mode);
     return { ok: true };
-  }, []);
-
-  const register = useCallback(async (email: string, password: string): Promise<RegisterResult> => {
-    const em = email.trim();
-    const pw = password.trim();
-    if (!em || !pw) {
-      return { ok: false, errorKey: "auth.error.missingFields" };
-    }
-    if (!isSupabaseConfigured()) {
-      const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
-      saveAuthSession(next);
-      setMockSession(next);
-      initHabitThemeOnLoad(appConfig.mode);
-      return { ok: true, needsEmailVerification: false };
-    }
-    const origin = typeof window !== "undefined" ? window.location.origin : undefined;
-    const { data, error } = await getSupabase()!.auth.signUp({
-      email: em,
-      password: pw,
-      options: origin ? { emailRedirectTo: origin } : undefined,
-    });
-    if (error) {
-      const { key, detail } = classifySupabaseAuthError(error);
-      return { ok: false, errorKey: key, errorDetail: detail };
-    }
-    const needsEmailVerification = !data.session;
-    if (data.session) {
-      setUser(data.session.user);
-      setRemoteDataUserId(data.session.user.id);
-      void pullAllUserDataForUser(data.session.user.id);
-    }
-    initHabitThemeOnLoad(appConfig.mode);
-    return { ok: true, needsEmailVerification };
   }, []);
 
   const logout = useCallback(() => {
@@ -172,11 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       user: isSupabaseConfigured() ? user : null,
       token,
-      login,
-      register,
+      sendEmailOtp,
+      verifyEmailOtp,
       logout,
     }),
-    [resolving, isLoggedIn, email, user, token, login, register, logout]
+    [resolving, isLoggedIn, email, user, token, sendEmailOtp, verifyEmailOtp, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
