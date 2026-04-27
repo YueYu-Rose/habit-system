@@ -231,6 +231,9 @@ export function loadHabitCatalog(): HabitCatalogState {
 export function saveHabitCatalog(s: HabitCatalogState): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(KEY, JSON.stringify(s));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(HABIT_CATALOG_SAVED_EVENT));
+  }
   queueMicrotask(() => void import("./userDataRemote").then((m) => m.schedulePushHabitCatalog(s)));
 }
 
@@ -250,6 +253,97 @@ export function getRecordedTimeIso(
 ): string | undefined {
   return state.recordedTimes?.[habitId]?.[date];
 }
+
+/**
+ * 无服务端 habitDaily 时，仅根据目录判断是否完成（与 useHabitCatalog.getDone 在 daily===null 时一致）
+ */
+export function isHabitDoneInCatalogOnly(state: HabitCatalogState, def: HabitDef, date: string): boolean {
+  if (getCustomDoneForDate(state, date, def.id)) return true;
+  if (def.systemKey) {
+    return false;
+  }
+  if (def.targetType === "time") {
+    return Boolean(getRecordedTimeIso(state, def.id, date));
+  }
+  return false;
+}
+
+function mergeCustomDoneUnion(
+  a: HabitCatalogState["customDone"],
+  b: HabitCatalogState["customDone"]
+): HabitCatalogState["customDone"] {
+  const dates = new Set([...Object.keys(a), ...Object.keys(b)]);
+  const out: HabitCatalogState["customDone"] = {};
+  for (const d of dates) {
+    const ma = a[d] ?? {};
+    const mb = b[d] ?? {};
+    const ids = new Set([...Object.keys(ma), ...Object.keys(mb)]);
+    const day: Record<string, boolean> = {};
+    for (const id of ids) {
+      if (ma[id] || mb[id]) day[id] = true;
+    }
+    if (Object.keys(day).length) out[d] = day;
+  }
+  return out;
+}
+
+function mergeRecordedTimesUnion(
+  a: HabitCatalogState["recordedTimes"],
+  b: HabitCatalogState["recordedTimes"]
+): HabitCatalogState["recordedTimes"] | undefined {
+  if (!a && !b) return undefined;
+  const out: NonNullable<typeof a> = {} as NonNullable<typeof a>;
+  const hids = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+  for (const hid of hids) {
+    const mA = a?.[hid] ?? {};
+    const mB = b?.[hid] ?? {};
+    const days = new Set([...Object.keys(mA), ...Object.keys(mB)]);
+    const row: Record<string, string> = {};
+    for (const d of days) {
+      const s = mA[d] || mB[d];
+      if (s) row[d] = s;
+    }
+    if (Object.keys(row).length) out[hid] = row;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function mergeDayTimesUnion(
+  a: HabitCatalogState["dayTimes"],
+  b: HabitCatalogState["dayTimes"]
+): HabitCatalogState["dayTimes"] | undefined {
+  if (!a && !b) return undefined;
+  const dates = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+  const out: NonNullable<typeof a> = {} as NonNullable<typeof a>;
+  for (const d of dates) {
+    const da = a?.[d];
+    const db = b?.[d];
+    if (!da && !db) continue;
+    out[d] = {
+      sleepIso: da?.sleepIso ?? db?.sleepIso,
+      wakeIso: da?.wakeIso ?? db?.wakeIso,
+    };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * 将本地与当前 state 的打卡数据做并集，避免仅 Supabase 的 state 缺 customDone/recorded 时流水与首页不一致
+ */
+export function mergeHabitCatalogCheckInOverlay(
+  primary: HabitCatalogState,
+  fromDisk: HabitCatalogState
+): HabitCatalogState {
+  return {
+    ...primary,
+    customDone: mergeCustomDoneUnion(primary.customDone, fromDisk.customDone),
+    recordedTimes: mergeRecordedTimesUnion(primary.recordedTimes, fromDisk.recordedTimes),
+    dayTimes: mergeDayTimesUnion(primary.dayTimes, fromDisk.dayTimes),
+  };
+}
+
+/** 习惯目录写入 localStorage 后派发，复盘页可据此与磁盘对齐 */
+export const HABIT_CATALOG_SAVED_EVENT = "habit-catalog-saved";
 
 /** 无 systemKey 且 targetType=time 的自定义习惯：打卡时刻写入 recordedTimes */
 function applyTimeHabitCheckIn(

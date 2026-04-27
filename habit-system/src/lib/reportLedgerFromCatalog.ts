@@ -1,9 +1,9 @@
 import { addDays } from "./dateLocal";
 import {
-  getCustomDoneForDate,
   getPointsForHabitComplete,
   getRecordedTimeIso,
   getWeekdayForIsoDate,
+  isHabitDoneInCatalogOnly,
   isHabitDueOnWeekday,
   type HabitCatalogState,
   type HabitDef,
@@ -58,7 +58,7 @@ export function buildHabitLedgerRowsFromCatalog(
     const w = getWeekdayForIsoDate(cur);
     for (const def of state.items) {
       if (!isHabitDueOnWeekday(def, w)) continue;
-      if (!getCustomDoneForDate(state, cur, def.id)) continue;
+      if (!isHabitDoneInCatalogOnly(state, def, cur)) continue;
       const amount = getPointsForHabitComplete(def);
       if (amount === 0) continue;
       rows.push({

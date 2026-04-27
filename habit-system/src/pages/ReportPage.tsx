@@ -5,7 +5,12 @@ import { useLanguage } from "../context/LanguageContext";
 import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
 import { fetchHabitCatalogFromSupabase } from "../lib/fetchHabitCatalogFromSupabase";
-import { loadHabitCatalog, type HabitCatalogState } from "../lib/habitListStorage";
+import {
+  HABIT_CATALOG_SAVED_EVENT,
+  loadHabitCatalog,
+  mergeHabitCatalogCheckInOverlay,
+  type HabitCatalogState,
+} from "../lib/habitListStorage";
 import { buildHabitLedgerRowsFromCatalog, type CatalogLedgerRow } from "../lib/reportLedgerFromCatalog";
 import {
   buildReportChartDisplay,
@@ -209,6 +214,7 @@ export function ReportPage() {
   const { showAI } = useAppConfig();
   const { user } = useAuth();
   const [catalog, setCatalog] = useState<HabitCatalogState>(() => loadHabitCatalog());
+  const [catalogDataTick, setCatalogDataTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -234,9 +240,21 @@ export function ReportPage() {
     return () => window.removeEventListener(REMOTE_DATA_EVENT, h);
   }, []);
 
+  useEffect(() => {
+    const bump = () => setCatalogDataTick((n) => n + 1);
+    window.addEventListener(HABIT_CATALOG_SAVED_EVENT, bump);
+    return () => window.removeEventListener(HABIT_CATALOG_SAVED_EVENT, bump);
+  }, []);
+
+  /** 与 localStorage 并集，避免已登录时 Supabase 拉取的 state 比本机少 customDone/recorded，导致流水与图表全空 */
+  const catalogForReport = useMemo(
+    () => mergeHabitCatalogCheckInOverlay(catalog, loadHabitCatalog()),
+    [catalog, catalogDataTick]
+  );
+
   const chartDisplay = useMemo(
-    () => buildReportChartDisplay(catalog, lang as Lang),
-    [catalog, lang]
+    () => buildReportChartDisplay(catalogForReport, lang as Lang),
+    [catalogForReport, lang]
   );
   const { sleepSeries, pointsSeries, sleepIsDemo, pointsIsDemo } = chartDisplay;
 
@@ -245,8 +263,8 @@ export function ReportPage() {
   const end = todayIsoLocal();
   const start = addDays(end, -30);
   const ledger = useMemo(
-    () => buildHabitLedgerRowsFromCatalog(catalog, start, end, lang as Lang),
-    [catalog, start, end, lang]
+    () => buildHabitLedgerRowsFromCatalog(catalogForReport, start, end, lang as Lang),
+    [catalogForReport, start, end, lang]
   );
 
   const yDomain = useMemo(() => {
