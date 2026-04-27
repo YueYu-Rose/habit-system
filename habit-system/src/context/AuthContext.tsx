@@ -31,7 +31,7 @@ type AuthContextValue = {
   isLoggedIn: boolean;
   email: string;
   user: User | null;
-  /** 无 Supabase 时沿用本地 mock 会话 token */
+  /** 无 Supabase 时：本机会话 token（仍走同一套登录态 UI） */
   token: string;
   /** Session 引导失败（可重试） */
   authBootstrapError: string | null;
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [sessionBootKey]);
 
-  /* 推广未登录时保留 LocalStorage Mock 种子 */
+  /* PROMOTION 未登录时写入本机默认习惯/奖励模板，保证首屏可用 */
   useEffect(() => {
     if (resolving) return;
     if (appConfig.mode !== "PROMOTION") return;

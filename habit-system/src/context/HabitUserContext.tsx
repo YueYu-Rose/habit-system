@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
-/** 全局用户积分（占位 mock，后续可对接 API 或同步） */
+/** 全局用户积分（可与后端/同步对齐） */
 export type HabitUser = {
   availablePoints: number;
   totalPoints: number;

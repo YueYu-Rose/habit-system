@@ -12,7 +12,7 @@ export const appConfig = {
   showAuth: mode === "PROMOTION",
   showAI: mode === "PERSONAL",
   showExternalIntegration: mode === "PERSONAL",
-  /** 推广版无后端，打卡/习惯/奖励全部走 LocalStorage，禁止 habitFetch */
+  /** 公网轻量变体可仅依赖本机存储；打卡/习惯/奖励走 LocalStorage，不强制接私有后端 */
   isPromotionOffline: mode === "PROMOTION",
 } as const;
 

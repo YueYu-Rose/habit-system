@@ -4,10 +4,10 @@
 
 ![Habit System — check-ins, mainline, rewards, AI coach](https://placehold.co/1200x420/0f172a/38bdf8?text=Habit+System+%E2%80%94+Personal+Growth+Lab&font=montserrat)
 
-*Replace the placeholder above with a hero screenshot: Report page + check-in, or a device mock.*
+*可替换为产品截图：打卡页、复盘、主线等真实界面。*
 
-**在线访问 / Live site:** [https://habit-system-phi.vercel.app/](https://habit-system-phi.vercel.app/)  
-*Production 部署在 Vercel，与 `main` 分支持续集成。*
+**在线使用 / Live site:** [https://habit-system-phi.vercel.app/](https://habit-system-phi.vercel.app/)  
+*部署在 Vercel，与 `main` 分支持续发布。*
 
 </div>
 
@@ -16,45 +16,39 @@
 
 ---
 
-## 🧭 Product Vision
+## 🧭 Product vision
 
-**Why does this exist?** To bridge the gap between *habit formation* and *long-term motivation* through **gamification** and **AI** — turning daily micro-actions into a visible point economy, a mainline quest, and an LLM coach that actually reads *your* week, not a generic blog post.
-
----
-
-## 🎯 Key Features (PM Focus)
-
-| Feature | What it does | PM angle |
-|--------|--------------|----------|
-| **AI Habit Coach** | Summarises **7 days of on-device check-ins** (wake, sleep, language habits, etc.), sends structured context to an **OpenAI-compatible** chat endpoint, and returns **sharp, English, Markdown** coaching. | Shows how **LLMs** turn *behavioural telemetry* into narrative and advice — the same path from *analytics event* to *insight* product managers design for. |
-| **Dynamic Reward Economy** | Points from habits feed **spendable** balance; a **multi-tier reward catalog** (quick wins → refill → upgrade → milestone) with redeem / undo flows. | Illustrates **closed-loop** motivation: earn → spend → dopamine, with guardrails (local pool, tiering). |
-| **Vibe-Driven UI** | Minimal, **mobile-first** “device frame” UI, high-contrast actions, check-in at the centre. | Optimised for **high-frequency, low-friction** interaction — the same bar you set for consumer habit apps. |
+**Why it exists?** To bridge *habit formation* and *long-term motivation* through **gamification** and **AI** — turning daily micro-actions into a visible point economy, a mainline quest, and an LLM coach that reads *your* week, not a generic post.
 
 ---
 
-## 🚀 The “Vibe Coding” Story
+## 🎯 核心能力（面向真实用户）
 
-> *"The best product sense is shipping sense."*
-
-This project was not wireframed in Figma for months — it was **shipped in tight loops** using **Cursor + modern LLM assistants** as a *co-pilot*, not a replacement for judgement:
-
-- **Idea → scaffold:** React + Vite + routing + first screens in days, not sprints.  
-- **Spec → code:** feature prompts (e.g. promotion build without backend, LocalStorage seeding, i18n) turned into *reviewable* diffs, then refined by hand.  
-- **CI → Vercel:** `main` 推送到 GitHub 后由 Vercel 构建部署；当前线上地址见文首 [habit-system-phi.vercel.app](https://habit-system-phi.vercel.app/)；**environment modes** 区分 demo 与完整产品。  
-
-That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* to enforce architecture (offline-first, env-based secrets, no API keys in source), and *how* to frame prompts so the output matches a **product** outcome, not a code golf exercise.
-
-> *"Tools don’t make the PM. Instrumentation + taste + iteration do."* — the vibe we optimised for.
+| 能力 | 作用 | 对用户的价值 |
+|------|------|----------------|
+| **AI 习惯教练** | 汇总**近 7 天**本机打卡（入睡、起床、语言习惯等），将结构化上文发到 **OpenAI 兼容**接口，返回 **清晰、Markdown** 建议。 | 把行为数据变成**可执行**的回顾与提醒。 |
+| **动态奖励** | 习惯积分进**可花余额**；多档**奖励单**可兑换/撤销。 | 形成「赚取 → 兑换 → 正反馈」的闭环。 |
+| **主线与主线足迹** | 长目标、快捷加分、外接任务可加分；**成长足迹**记录正向注能历史。 | 长周期目标有可见进度与记录。 |
+| **移动优先 UI** | 高对比、打卡为中心，本机/云端数据可用。 | 适合每天多次打开。 |
 
 ---
 
-## 🧱 Technical Architecture
+## 🚀 如何迭代的
 
-- **Client:** **React 18** + **TypeScript** + **Vite** (fast HMR, lean production build).  
-- **Styling:** A dedicated **`habit.css` design system** (tokens, “device” layout, high-frequency check-in affordances); **Tailwind**-style utility workflow can be layered where `tailwind.config` is fully wired.  
-- **Data (offline-first):** **LocalStorage** for habit catalog, check-in state, reward catalog, mainline pool, and seed data for the **PROMOTION** build — *no network required* for the core loop on the demo.  
-- **Sync (optional):** **Supabase** for auth and cloud storage when `VITE_SUPABASE_*` is set.  
-- **Optional backend (仅本地全栈/扩展时):** Express + SQLite 等，在需要更完整账本的本地环境使用（与纯前端可分开维护）。
+项目用 **React + Vite + TypeScript** 持续交付；需求与 `env` 驱动**同一套代码**下的多种部署方式（全功能/轻量变体等），不依赖重文档先行。
+
+- **想法 → 可跑版本：** 路由、首屏、习惯闭环快速落地。  
+- **规格 → 可合并的改动：** 功能以可审查的 diff 落地，再手工收束体验与安全（密钥不进仓库等）。  
+- **CI → 线上：** `main` 推 GitHub 后 Vercel 构建；文首有当前正式地址。  
+
+---
+
+## 🧱 技术结构
+
+- **Client:** **React 18** + **TypeScript** + **Vite**  
+- **Styling:** **`habit.css`** 设计系统；可按需在 Tailwind 中扩展。  
+- **Data（优先离线在浏览器）：** **LocalStorage** 存习惯表、打卡、奖励、主线路径；可选 **Supabase** 登录与多设备同步。  
+- **可选本地扩展：** `server/` 下 Express + SQLite 等，用于本机全栈/账本，与纯前端可并存。  
 
 ```text
 ┌─────────────┐     ┌──────────────────┐
@@ -68,36 +62,38 @@ That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* t
 
 ---
 
-## ⚙️ Environment Modes: `PERSONAL` vs `PROMOTION`
+## ⚙️ 环境模式：`PERSONAL` 与 `PROMOTION`
 
-| Mode | Intent | Engineering behaviour |
-|------|--------|------------------------|
-| **`PERSONAL`** | **全功能/开发向**：登录、Supabase 同步、外接能力等可全开；**不是**“只能作者本机用”的专属版 — 你日常也可直接用线上站，本模式多用于本地或自建部署时对齐完整能力。 | 可按 `env` 接后端、Supabase 等，无强制的 demo mock。 |
-| **`PROMOTION`** | **作品展示 / 面试 demo**（Vercel 上常见）：核心闭环**不依赖**本地 API。 | **Offline-first** 习惯、奖励与种子数据。 |
+通过构建时 **`VITE_APP_MODE`** 切换；两者都是**可给真实用户用的产品形态**，不是「假数据玩具」与「真产品」的对立，而是**能力组合**不同：
 
-Switch via **`VITE_APP_MODE`** at **build time** (Vite embeds it). This is a deliberate **separation of concerns**: one codebase, two *deployables*, minimal `#ifdef`-style branching — the kind of **config-driven** thinking hiring managers look for in product-minded engineers.
+| 模式 | 定位 | 工程侧 |
+|------|------|--------|
+| **`PERSONAL`** | 默认的**全能力**变体：Supabase 登录/同步、外接能力等可配置打开，适合**日常自用**和本地/自建。 | 按 `env` 接云与扩展后端。 |
+| **`PROMOTION`** | **轻量公网**变体：不强制接私有后端，习惯/奖励等可用本机首屏模板 + 可选邮箱类登录；**核心闭环不依赖**本地额外 API 服务。 | 离线优先、本机存状态与模板。  
 
----
-
-## 🗺️ Roadmap
-
-- **Back-end:** e.g. **Supabase** (auth + sync + RLS) for real multi-device history and team-friendly habits.  
-- **Social layer:** light accountability (streaks visible to friends, opt-in) without turning into another feed.  
-- **AI Coach 2.0:** streaming responses, *live* windowed metrics (not just weekly), and **tool-calling** into your ledger for grounded numbers.  
-- **Quality:** E2E on critical paths, accessibility audit, and PWA for “home screen” install.
+同一仓库、**配置驱动**分支，减少复制粘贴多份业务代码。
 
 ---
 
-## ▶️ How to Run
+## 🗺️ Roadmap（示例方向）
+
+- 多设备/多人协作的云端习惯与 RLS 细化。  
+- 轻量社交/问责（可选、非信息流）。  
+- AI 教练：流式回复、与账本工具调用等。  
+- E2E、可访问性、PWA 安装。
+
+---
+
+## ▶️ How to run
 
 ### 用线上还是本机？
 
 | 场景 | 说明 |
 |------|------|
-| **日常使用（与作者相同）** | 打开 [https://habit-system-phi.vercel.app/](https://habit-system-phi.vercel.app/) 即可。这是与仓库同步的**正式站**，不依赖你本地是否装过 Node。数据在各自浏览器里（可配合登录与 Supabase 云同步）。 |
-| **本地 = 开发版** | 在仓库里 `npm run dev` 是为了**改代码、热更新、自测、接本地 env**，不是「个人特供、别人不能跑」的用法。与线上是**同一套产品**；本机与正式站数据默认隔离（不同域名下的 LocalStorage），除非你为两边配置同一类账号与云同步。 |
+| **日常使用** | 直接打开 [https://habit-system-phi.vercel.app/](https://habit-system-phi.vercel.app/)。**正式环境**，不依赖你本机是否装 Node。数据在各自浏览器中（可登录并用 Supabase 同步）。 |
+| **本地 = 开发** | 在 `habit-system` 下 `npm run dev` 用于**改代码、接 env、自测**；与线上是**同一套产品**，数据按域名/账号隔离。 |
 
-### 本地开发（开发版）
+### 本地开发
 
 ```bash
 cd habit-system
@@ -105,30 +101,28 @@ npm install
 npm run dev
 ```
 
-- 在终端里看 Vite 打印的地址，一般为 `http://localhost:5173`（端口被占用时会自动换）。  
-- **接近线上演示包（可选）：** `npm run build:promo` 使用 Vite `production` 模式，请与 `VITE_APP_MODE` 及本机/CI 的 env 一致。  
-- **本地预览构建结果：** `npm run build` 后执行 `npm run preview`。
+- 终端会打印本机地址（常见 `http://localhost:5173`）。  
+- 与公网轻量变体接近的构建（可选）：`npm run build:promo`（`production` 模式，与 `VITE_APP_MODE` 及 env 一致）。  
+- 预览生产包：`npm run build` 后 `npm run preview`。
 
-### 环境变量（Vercel 与本机一致）
+### 环境变量（Vercel / 本机 `.env`）
 
-在 Vercel 项目设置与本地 `habit-system/.env` / `.env.local` 中配置（不要提交含密钥的 env 到 Git）：
+| Variable | 说明 |
+|----------|------|
+| `VITE_APP_MODE` | `PROMOTION` 或 `PERSONAL`（见上文） |
+| `VITE_SUPABASE_URL` | 选填；填写后可启用 Supabase 登录与同步 |
+| `VITE_SUPABASE_ANON_KEY` | Supabase 项目 **anon** 公钥 |
 
-| Variable | Notes |
-|----------|--------|
-| `VITE_APP_MODE` | `PROMOTION` 或 `PERSONAL`（见上文「Environment Modes」） |
-| `VITE_SUPABASE_URL` | 选填；设置后可启用 Supabase 登录与数据同步 |
-| `VITE_SUPABASE_ANON_KEY` | 填 Supabase 项目里的 **anon** public key |
-
-> *"If it’s not in `env`, it’s not a secret. If it’s in the repo, it’s public."* — treat keys accordingly.
+> 勿把密钥写进版本库；仅放环境变量与本地 `*.local`。
 
 ---
 
 ## 📄 License
 
-Private / portfolio use unless otherwise specified by the author.
+以作者/仓库约定为准；未另行声明时，默认专有使用。
 
 ---
 
 <p align="center">
-  <strong>Habit System</strong> — *ship habits like you ship product.*
+  <strong>Habit System</strong> — *认真生活，把自己养好。*
 </p>

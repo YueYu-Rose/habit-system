@@ -256,7 +256,7 @@ export function ReportPage() {
     () => buildReportChartDisplay(catalogForReport, lang as Lang),
     [catalogForReport, lang]
   );
-  const { sleepSeries, pointsSeries, sleepIsDemo, pointsIsDemo } = chartDisplay;
+  const { sleepSeries, pointsSeries, sleepUsesRefSeries, pointsUsesRefSeries } = chartDisplay;
 
   const chartLabelByKeyPoints = useMemo(() => buildDateLabelMap(pointsSeries), [pointsSeries]);
   const chartLabelByKeySleep = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
@@ -301,16 +301,16 @@ export function ReportPage() {
       <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "var(--habit-text)" }}>
           {t("report.chart.sleep")}
-          {sleepIsDemo ? (
-            <span className="habit-report-demo-badge habit-report-demo-badge--title" role="note">
-              {t("report.chart.demoShort")}
+          {sleepUsesRefSeries ? (
+            <span className="habit-report-ref-badge habit-report-ref-badge--title" role="note">
+              {t("report.chart.refShort")}
             </span>
           ) : null}
         </h2>
         <div className="habit-report-chart-frame" style={{ height: 220, marginTop: 10 }}>
-          {sleepIsDemo ? (
-            <div className="habit-report-demo-film" role="presentation" aria-hidden>
-              <span className="habit-report-demo-film__caption">{t("report.chart.demoBadge")}</span>
+          {sleepUsesRefSeries ? (
+            <div className="habit-report-ref-film" role="presentation" aria-hidden>
+              <span className="habit-report-ref-film__caption">{t("report.chart.refCaption")}</span>
             </div>
           ) : null}
           <ResponsiveContainer width="100%" height="100%">
@@ -364,16 +364,16 @@ export function ReportPage() {
       <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "var(--habit-text)" }}>
           {t("report.chart.points")}
-          {pointsIsDemo ? (
-            <span className="habit-report-demo-badge habit-report-demo-badge--title" role="note">
-              {t("report.chart.demoShort")}
+          {pointsUsesRefSeries ? (
+            <span className="habit-report-ref-badge habit-report-ref-badge--title" role="note">
+              {t("report.chart.refShort")}
             </span>
           ) : null}
         </h2>
         <div className="habit-report-chart-frame" style={{ height: 200, marginTop: 10 }}>
-          {pointsIsDemo ? (
-            <div className="habit-report-demo-film" role="presentation" aria-hidden>
-              <span className="habit-report-demo-film__caption">{t("report.chart.demoBadge")}</span>
+          {pointsUsesRefSeries ? (
+            <div className="habit-report-ref-film" role="presentation" aria-hidden>
+              <span className="habit-report-ref-film__caption">{t("report.chart.refCaption")}</span>
             </div>
           ) : null}
           <ResponsiveContainer width="100%" height="100%">

@@ -113,7 +113,7 @@ export type ReportSeries7D = {
   hasAnySleepSegment: boolean;
 };
 
-/** 近 7 个「本地日」的元数据，供真实序列与 Mock 序列共用，保证 key / 轴一致 */
+/** 近 7 个「本地日」的元数据，供真实序列与参考序列共用，保证 key / 轴一致 */
 function getLast7DayMetas(endIso: string) {
   const days: { iso: string; date: Date }[] = [];
   for (let i = 6; i >= 0; i -= 1) {
@@ -190,37 +190,36 @@ const MIN_DAYS_FOR_REAL_CHART = 2;
 export type ReportChartDisplay = {
   pointsSeries: ReportPointsPoint[];
   sleepSeries: ReportSleepPoint[];
-  pointsIsDemo: boolean;
-  sleepIsDemo: boolean;
-  /** 原始 7 日序列（未套 Mock，便于调试） */
+  pointsUsesRefSeries: boolean;
+  sleepUsesRefSeries: boolean;
+  /** 原始 7 日序列（未加参考线，便于调试） */
   raw: ReportSeries7D;
 };
 
 /**
- * 真实数据不足（&lt;2 个有效日或折线无起伏感）时，用 Mock 曲线代替展示；
- * 一旦满足阈值，切回仅真实数据，不再套 Demo。
+ * 真实数据尚少（&lt;2 个有效日）时，用参考曲线便于看清图表轴；达阈值后仅展示真实序列。
  */
 export function buildReportChartDisplay(state: HabitCatalogState, lang: Lang): ReportChartDisplay {
   const raw = buildReportSeries7Days(state, lang);
   const nAct = countCustomActivityDays7(state);
   const nSleep = countSleepCompleteDays7(raw.sleepSeries);
-  const pointsIsDemo = nAct < MIN_DAYS_FOR_REAL_CHART;
-  const sleepIsDemo = nSleep < MIN_DAYS_FOR_REAL_CHART;
+  const pointsUsesRefSeries = nAct < MIN_DAYS_FOR_REAL_CHART;
+  const sleepUsesRefSeries = nSleep < MIN_DAYS_FOR_REAL_CHART;
 
-  const mock = buildMockReportSeries7Days(lang, todayIsoLocal());
+  const ref = buildReferenceReportSeries7Days(lang, todayIsoLocal());
   return {
-    pointsSeries: pointsIsDemo ? mock.pointsSeries : raw.pointsSeries,
-    sleepSeries: sleepIsDemo ? mock.sleepSeries : raw.sleepSeries,
-    pointsIsDemo,
-    sleepIsDemo,
+    pointsSeries: pointsUsesRefSeries ? ref.pointsSeries : raw.pointsSeries,
+    sleepSeries: sleepUsesRefSeries ? ref.sleepSeries : raw.sleepSeries,
+    pointsUsesRefSeries,
+    sleepUsesRefSeries,
     raw,
   };
 }
 
 /**
- * 面试/空状态预览：7 天有起伏的净分与睡、起时间（扩展分钟与真实算法一致）
+ * 数据稀疏时的 7 日参考曲线：净分与睡/起扩展分钟，与正式算法同构，仅作占位展示。
  */
-export function buildMockReportSeries7Days(lang: Lang, endIso: string = todayIsoLocal()): ReportSeries7D {
+export function buildReferenceReportSeries7Days(lang: Lang, endIso: string = todayIsoLocal()): ReportSeries7D {
   const days = getLast7DayMetas(endIso);
 
   const netPattern = [5, 14, 8, 22, 12, 18, 15];
