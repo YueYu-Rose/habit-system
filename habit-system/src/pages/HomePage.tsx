@@ -352,7 +352,7 @@ export function HomePage() {
 
       <ul className="habit-checkin-stack">
         {visibleHabits.map((def) => {
-          const done0 = getDone(def, daily, catalog, date);
+          const done0 = getDone(def, daily, catalog, day);
           const { text, cls } = getPointsDisplay(def, done0, t);
           const bKey = def.systemKey ?? def.id;
 
