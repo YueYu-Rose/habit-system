@@ -11,6 +11,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { useAppConfig } from "./config/appConfig";
 import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
+import { AppLoadingSkeleton } from "./components/AppLoadingSkeleton";
 
 function GuardedRoute({ allow, element }: { allow: boolean; element: JSX.Element }) {
   if (!allow) return <Navigate to="/auth" replace />;
@@ -31,13 +32,7 @@ export default function App() {
   } = useAuth();
 
   if (showAuth && isAuthResolving) {
-    return (
-      <div className="habit-auth-page" style={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
-        <p className="habit-muted" style={{ fontSize: 14 }}>
-          {t("common.loading")}
-        </p>
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   if (showAuth && !isLoggedIn && (authBootstrapError != null || authBootstrapTimedOut)) {

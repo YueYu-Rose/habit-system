@@ -15,7 +15,7 @@ import {
   type HabitCatalogState,
   type HabitDef,
 } from "../lib/habitListStorage";
-import { addDays, todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
+import { todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
 import type { TransKey } from "../locales/zh";
 
 type HabitDaily = {
@@ -39,6 +39,20 @@ type Summary = {
   mainline: { title: string; progress_percent: number; note: string | null } | null;
   externalTodo: { mode: string; completionRate: number | null };
 };
+
+function makeSummary(date: string, extRate: number | null): Summary {
+  return {
+    date,
+    availablePoints: 0,
+    lifetimePoints: 0,
+    weekNetPoints: 0,
+    lastNightSleepHours: null,
+    habitDaily: null,
+    deductionReminders: [],
+    mainline: null,
+    externalTodo: { mode: "local", completionRate: extRate },
+  };
+}
 
 type TFn = (key: TransKey, vars?: Record<string, string | number>) => string;
 
@@ -128,7 +142,9 @@ function needsTimeModal(def: HabitDef): boolean {
 }
 
 export function HomePage() {
-  const [day, setDay] = useState(() => todayIsoLocal());
+  const [ext, setExt] = useState<{ total: number; completed: number; rate: number } | null>(null);
+  const [d, setD] = useState<Summary>(() => makeSummary(todayIsoLocal(), null));
+  const day = d.date;
   const weekday = getWeekdayForIsoDate(day);
   const { mode, showExternalIntegration } = useAppConfig();
   const isPersonal = mode === "PERSONAL";
@@ -138,9 +154,7 @@ export function HomePage() {
   const { getEffectiveAvailable, spendableDelta } = useMainlineLoop();
   const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
 
-  const [d, setD] = useState<Summary | null>(null);
   const [busy] = useState<string | null>(null);
-  const [ext, setExt] = useState<{ total: number; completed: number; rate: number } | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [newSheet, setNewSheet] = useState(false);
@@ -149,26 +163,32 @@ export function HomePage() {
   const [timeModalDef, setTimeModalDef] = useState<HabitDef | null>(null);
 
   const buildLocalSummary = useCallback((): Summary => {
-    return {
-      date: day,
-      availablePoints: 0,
-      lifetimePoints: 0,
-      weekNetPoints: 0,
-      lastNightSleepHours: null,
-      habitDaily: null,
-      deductionReminders: [],
-      mainline: null,
-      externalTodo: { mode: "local", completionRate: ext?.rate ?? null },
-    };
+    return makeSummary(day, ext?.rate ?? null);
   }, [day, ext?.rate]);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(() => {
     setD(buildLocalSummary());
   }, [buildLocalSummary]);
 
   useEffect(() => {
-    void reload();
+    reload();
   }, [reload]);
+
+  useEffect(() => {
+    const sync = () => {
+      const t = todayIsoLocal();
+      setD((prev) => (prev.date === t ? prev : { ...makeSummary(t, ext?.rate ?? null) }));
+    };
+    const id = window.setInterval(sync, 60_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [ext?.rate]);
 
   useEffect(() => {
     const h = () => reloadCatalog();
@@ -264,8 +284,7 @@ export function HomePage() {
     removeHabit(def.id);
   };
 
-  const availableDisplay = getEffectiveAvailable(d?.availablePoints ?? 0) + (catalog.customWallet || 0);
-  if (!d) return <p className="habit-muted">{t("common.loading")}</p>;
+  const availableDisplay = getEffectiveAvailable(d.availablePoints) + (catalog.customWallet || 0);
 
   const extModeLabel =
     d.externalTodo.mode === "local" ? t("home.external.modeLocal") : d.externalTodo.mode;
@@ -273,33 +292,6 @@ export function HomePage() {
   return (
     <>
       <section className="habit-checkin-page" aria-label={t("nav.checkin")}>
-      <div className="habit-day-nav">
-        <button
-          type="button"
-          className="habit-day-nav__btn"
-          onClick={() => setDay((x) => addDays(x, -1))}
-          aria-label={t("home.date.prev")}
-        >
-          ‹
-        </button>
-        <input
-          className="habit-day-nav__date"
-          type="date"
-          value={d.date}
-          onChange={(e) => {
-            if (e.target.value) setDay(e.target.value);
-          }}
-          aria-label={t("home.aria.date")}
-        />
-        <button
-          type="button"
-          className="habit-day-nav__btn"
-          onClick={() => setDay((x) => addDays(x, 1))}
-          aria-label={t("home.date.next")}
-        >
-          ›
-        </button>
-      </div>
       <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>

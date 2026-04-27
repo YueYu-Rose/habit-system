@@ -128,16 +128,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthBootstrapTimedOut(false);
 
         if (u) {
-          console.log("2. Fetching habits (pullAllUserData)...");
-          try {
-            await pullAllUserDataForUser(u.id);
-            setRemoteDataPullError(null);
-            setAuthBootstrapError(null);
-          } catch (e) {
-            console.error("🔥 Supabase Fetch Error:", e);
-            const msg = e instanceof Error ? e.message : String(e);
-            setRemoteDataPullError(msg);
-          }
+          // 不阻塞首屏：会话就绪后立即结束 boot；云端拉取在后台静默进行（乐观 + 与本地优先）
+          console.log("2. Fetching habits (pullAllUserData) in background…");
+          void (async () => {
+            try {
+              await pullAllUserDataForUser(u.id);
+              setRemoteDataPullError(null);
+              setAuthBootstrapError(null);
+            } catch (e) {
+              console.error("🔥 Supabase Fetch Error:", e);
+              const msg = e instanceof Error ? e.message : String(e);
+              setRemoteDataPullError(msg);
+            }
+          })();
         }
       } catch (e) {
         console.error("🔥 Supabase Fetch Error:", e);
@@ -158,15 +161,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       setRemoteDataUserId(u?.id ?? null);
       if (event === "SIGNED_IN" && u) {
-        console.log("2. Fetching habits (onAuthStateChange SIGNED_IN)...");
-        try {
-          await pullAllUserDataForUser(u.id);
-          setRemoteDataPullError(null);
-        } catch (e) {
-          console.error("🔥 Supabase Fetch Error:", e);
-          const msg = e instanceof Error ? e.message : String(e);
-          setRemoteDataPullError(msg);
-        }
+        console.log("2. Fetching habits (onAuthStateChange SIGNED_IN) in background…");
+        void (async () => {
+          try {
+            await pullAllUserDataForUser(u.id);
+            setRemoteDataPullError(null);
+          } catch (e) {
+            console.error("🔥 Supabase Fetch Error:", e);
+            const msg = e instanceof Error ? e.message : String(e);
+            setRemoteDataPullError(msg);
+          }
+        })();
       }
     });
 

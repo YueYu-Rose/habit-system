@@ -340,6 +340,19 @@ function RewardBottomSheet({
   const canSave = title.trim().length > 0 && resolvedCost > 0;
 
   useEffect(() => {
+    if (!initialData) return;
+    setTitle(initialData.title ?? "");
+    setTierId(tierIdFromRow(initialData));
+    const c = initialData.cost_points;
+    if (c != null && (COST_CHIPS as readonly number[]).includes(c)) {
+      setCostPreset(c as CostPreset);
+    } else {
+      setCostPreset("custom");
+      setCustomCost(c ?? 20);
+    }
+  }, [initialData]);
+
+  useEffect(() => {
     if (isEdit) return;
     const s = SUGGEST_PTS[tierId];
     if ((COST_CHIPS as readonly number[]).includes(s)) {

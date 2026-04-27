@@ -121,13 +121,10 @@ export function buildReportSeries7Days(state: HabitCatalogState, lang: Lang): Re
     days.push({ iso, date: new Date(y, m - 1, d) });
   }
 
+  /** 仅统计「真实打卡」customDone，不把「未打卡导致的罚分」当成有数据，否则会出现全 -20 平直假线 */
   let hasAnyActivity = false;
   for (const { iso } of days) {
     if (hasCustomActivityOnDate(state, iso)) {
-      hasAnyActivity = true;
-      break;
-    }
-    if (netPointsForDate(state, iso) !== 0) {
       hasAnyActivity = true;
       break;
     }
