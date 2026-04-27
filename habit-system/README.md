@@ -6,7 +6,8 @@
 
 *Replace the placeholder above with a hero screenshot: Report page + check-in, or a device mock.*
 
-**Live demo (when deployed):** add your Vercel URL here
+**在线访问 / Live site:** [https://habit-system-phi.vercel.app/](https://habit-system-phi.vercel.app/)  
+*Production 部署在 Vercel，与 `main` 分支持续集成。*
 
 </div>
 
@@ -39,7 +40,7 @@ This project was not wireframed in Figma for months — it was **shipped in tigh
 
 - **Idea → scaffold:** React + Vite + routing + first screens in days, not sprints.  
 - **Spec → code:** feature prompts (e.g. promotion build without backend, LocalStorage seeding, i18n) turned into *reviewable* diffs, then refined by hand.  
-- **CI → Vercel:** `main` as source of truth; **environment modes** for demo vs full product; iteration velocity visible to any interviewer.  
+- **CI → Vercel:** `main` 推送到 GitHub 后由 Vercel 构建部署；当前线上地址见文首 [habit-system-phi.vercel.app](https://habit-system-phi.vercel.app/)；**environment modes** 区分 demo 与完整产品。  
 
 That is **AI PM tool mastery**: knowing *when* to delegate generation, *where* to enforce architecture (offline-first, env-based secrets, no API keys in source), and *how* to frame prompts so the output matches a **product** outcome, not a code golf exercise.
 
