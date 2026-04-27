@@ -199,6 +199,8 @@ export const EN: Record<TransKey, string> = {
   "report.chart.points": "Execution (7 days, net points)",
   "report.chart.emptyHint": "Check in to accumulate data; your trend will appear here.",
   "report.chart.emptySleep": "Log sleep and wake on the home screen to see the rhythm chart.",
+  "report.chart.demoShort": "Demo",
+  "report.chart.demoBadge": "Sample (Demo) — your real trend appears as you check in",
   "report.sleepTooltip.noData": "No complete sleep & wake times that day",
   "report.ledger": "Point ledger (30 days)",
   "report.ledger.empty": "No entries in the last 30 days",

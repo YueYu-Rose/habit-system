@@ -112,14 +112,20 @@ export type ReportSeries7D = {
   hasAnySleepSegment: boolean;
 };
 
-export function buildReportSeries7Days(state: HabitCatalogState, lang: Lang): ReportSeries7D {
-  const end = todayIsoLocal();
+/** 近 7 个「本地日」的元数据，供真实序列与 Mock 序列共用，保证 key / 轴一致 */
+function getLast7DayMetas(endIso: string) {
   const days: { iso: string; date: Date }[] = [];
   for (let i = 6; i >= 0; i -= 1) {
-    const iso = addDays(end, -i);
+    const iso = addDays(endIso, -i);
     const [y, m, d] = iso.split("-").map((x) => parseInt(x, 10));
     days.push({ iso, date: new Date(y, m - 1, d) });
   }
+  return days;
+}
+
+export function buildReportSeries7Days(state: HabitCatalogState, lang: Lang): ReportSeries7D {
+  const end = todayIsoLocal();
+  const days = getLast7DayMetas(end);
 
   /** 仅统计「真实打卡」customDone，不把「未打卡导致的罚分」当成有数据，否则会出现全 -20 平直假线 */
   let hasAnyActivity = false;
@@ -166,4 +172,90 @@ export function buildReportSeries7Days(state: HabitCatalogState, lang: Lang): Re
   const hasAnySleepSegment = sleepSeries.some((p) => p.sleepExt != null && p.wakeExt != null);
 
   return { sleepSeries, pointsSeries, hasAnyActivity, hasAnySleepSegment };
+}
+
+/** 有打卡记录的自然日数（只认 customDone，与 hasAnyActivity 的判定一致但返回计数） */
+export function countCustomActivityDays7(state: HabitCatalogState, endIso = todayIsoLocal()): number {
+  return getLast7DayMetas(endIso).filter(({ iso }) => hasCustomActivityOnDate(state, iso)).length;
+}
+
+/** 有完整睡/起段的「起床日」数 */
+export function countSleepCompleteDays7(sleepSeries: ReportSleepPoint[]): number {
+  return sleepSeries.filter((p) => p.sleepExt != null && p.wakeExt != null).length;
+}
+
+const MIN_DAYS_FOR_REAL_CHART = 2;
+
+export type ReportChartDisplay = {
+  pointsSeries: ReportPointsPoint[];
+  sleepSeries: ReportSleepPoint[];
+  pointsIsDemo: boolean;
+  sleepIsDemo: boolean;
+  /** 原始 7 日序列（未套 Mock，便于调试） */
+  raw: ReportSeries7D;
+};
+
+/**
+ * 真实数据不足（&lt;2 个有效日或折线无起伏感）时，用 Mock 曲线代替展示；
+ * 一旦满足阈值，切回仅真实数据，不再套 Demo。
+ */
+export function buildReportChartDisplay(state: HabitCatalogState, lang: Lang): ReportChartDisplay {
+  const raw = buildReportSeries7Days(state, lang);
+  const nAct = countCustomActivityDays7(state);
+  const nSleep = countSleepCompleteDays7(raw.sleepSeries);
+  const pointsIsDemo = nAct < MIN_DAYS_FOR_REAL_CHART;
+  const sleepIsDemo = nSleep < MIN_DAYS_FOR_REAL_CHART;
+
+  const mock = buildMockReportSeries7Days(lang, todayIsoLocal());
+  return {
+    pointsSeries: pointsIsDemo ? mock.pointsSeries : raw.pointsSeries,
+    sleepSeries: sleepIsDemo ? mock.sleepSeries : raw.sleepSeries,
+    pointsIsDemo,
+    sleepIsDemo,
+    raw,
+  };
+}
+
+/**
+ * 面试/空状态预览：7 天有起伏的净分与睡、起时间（扩展分钟与真实算法一致）
+ */
+export function buildMockReportSeries7Days(lang: Lang, endIso: string = todayIsoLocal()): ReportSeries7D {
+  const days = getLast7DayMetas(endIso);
+
+  const netPattern = [5, 14, 8, 22, 12, 18, 15];
+  const sleepClockMin = [22 * 60 + 40, 23 * 60 + 10, 22 * 60 + 20, 23 * 60 + 30, 22 * 60 + 55, 23 * 60, 22 * 60 + 5];
+  const wakeClockMin = [6 * 60 + 20, 7 * 60 + 5, 6 * 60 + 40, 7 * 60 + 15, 6 * 60 + 50, 7 * 60, 6 * 60 + 30];
+
+  const pointsSeries: ReportPointsPoint[] = days.map(({ iso, date }, i) => ({
+    key: iso,
+    dateLabel: formatMMDD(date),
+    weekLabel: weekLabelFor(date, lang),
+    net: netPattern[i] ?? 10,
+  }));
+
+  const sleepSeries: ReportSleepPoint[] = days.map(({ iso, date }, i) => {
+    const smin = sleepClockMin[i] ?? 22 * 60 + 30;
+    const wmin = wakeClockMin[i] ?? 7 * 60;
+    const sExt = toExtendedMinutesFromClockMins(smin);
+    const wExt = toExtendedMinutesFromClockMins(wmin);
+    const range: [number, number] = [Math.min(sExt, wExt), Math.max(sExt, wExt)];
+    const diffMin = wExt - sExt;
+    const hours = Number.isFinite(diffMin) ? Math.max(0, diffMin) / 60 : null;
+    return {
+      key: iso,
+      dateLabel: formatMMDD(date),
+      weekLabel: weekLabelFor(date, lang),
+      sleepExt: sExt,
+      wakeExt: wExt,
+      range,
+      sleepHours: hours,
+    };
+  });
+
+  return {
+    pointsSeries,
+    sleepSeries,
+    hasAnyActivity: true,
+    hasAnySleepSegment: true,
+  };
 }

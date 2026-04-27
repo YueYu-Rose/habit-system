@@ -7,7 +7,7 @@ import { useAppConfig } from "../config/appConfig";
 import { fetchHabitCatalogFromSupabase } from "../lib/fetchHabitCatalogFromSupabase";
 import { loadHabitCatalog, type HabitCatalogState } from "../lib/habitListStorage";
 import {
-  buildReportSeries7Days,
+  buildReportChartDisplay,
   type ReportPointsPoint,
   type ReportSleepPoint,
 } from "../lib/reportSeriesFromCatalog";
@@ -240,10 +240,11 @@ export function ReportPage() {
     return () => window.removeEventListener(REMOTE_DATA_EVENT, h);
   }, []);
 
-  const { sleepSeries, pointsSeries, hasAnyActivity, hasAnySleepSegment } = useMemo(
-    () => buildReportSeries7Days(catalog, lang as Lang),
+  const chartDisplay = useMemo(
+    () => buildReportChartDisplay(catalog, lang as Lang),
     [catalog, lang]
   );
+  const { sleepSeries, pointsSeries, sleepIsDemo, pointsIsDemo } = chartDisplay;
 
   const chartLabelByKeyPoints = useMemo(() => buildDateLabelMap(pointsSeries), [pointsSeries]);
   const chartLabelByKeySleep = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
@@ -272,17 +273,6 @@ export function ReportPage() {
 
   const primary = "var(--color-primary)";
 
-  const showPointsChart = hasAnyActivity;
-  const showSleepChart = hasAnySleepSegment;
-
-  const emptyCardStyle = {
-    padding: "22px 18px" as const,
-    marginBottom: 16,
-    textAlign: "center" as const,
-    border: "1px dashed color-mix(in srgb, var(--color-primary) 28%, #e5e7eb)",
-    background: "color-mix(in srgb, var(--theme-primary-soft) 50%, #ffffff)",
-  };
-
   return (
     <>
       <p className="habit-muted habit-page-lead">{t("report.lead")}</p>
@@ -302,107 +292,111 @@ export function ReportPage() {
       <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "var(--habit-text)" }}>
           {t("report.chart.sleep")}
+          {sleepIsDemo ? (
+            <span className="habit-report-demo-badge habit-report-demo-badge--title" role="note">
+              {t("report.chart.demoShort")}
+            </span>
+          ) : null}
         </h2>
-        {showSleepChart ? (
-          <div style={{ height: 220, marginTop: 10 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sleepSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-                <XAxis
-                  dataKey="key"
-                  tickLine={false}
-                  axisLine={false}
-                  height={50}
-                  interval={0}
-                  tick={(p) => CustomXAxisTick(p, chartLabelByKeySleep)}
-                />
-                <YAxis
-                  domain={yDomain as [number, number]}
-                  tickLine={false}
-                  axisLine={false}
-                  width={42}
-                  tick={{ fill: "#9ca3af", fontSize: 11 }}
-                  tickFormatter={(v: number) => formatHMFromExtended(v)}
-                />
-                <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
-                <Line
-                  type="monotone"
-                  dataKey="sleepExt"
-                  stroke={primary}
-                  strokeWidth={2.5}
-                  connectNulls={false}
-                  dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  isAnimationActive
-                />
-                <Line
-                  type="monotone"
-                  dataKey="wakeExt"
-                  stroke={primary}
-                  strokeWidth={2.5}
-                  connectNulls={false}
-                  dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  isAnimationActive
-                />
-                <Tooltip
-                  content={<ReportSleepTooltip />}
-                  cursor={{ stroke: "#d1d5db", strokeDasharray: "4 4" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div style={{ ...emptyCardStyle, marginTop: 12, marginBottom: 0, border: emptyCardStyle.border, background: emptyCardStyle.background }}>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--habit-text-secondary)" }}>
-              {t("report.chart.emptySleep")}
-            </p>
-          </div>
-        )}
+        <div className="habit-report-chart-frame" style={{ height: 220, marginTop: 10 }}>
+          {sleepIsDemo ? (
+            <div className="habit-report-demo-film" role="presentation" aria-hidden>
+              <span className="habit-report-demo-film__caption">{t("report.chart.demoBadge")}</span>
+            </div>
+          ) : null}
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sleepSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <XAxis
+                dataKey="key"
+                tickLine={false}
+                axisLine={false}
+                height={50}
+                interval={0}
+                tick={(p) => CustomXAxisTick(p, chartLabelByKeySleep)}
+              />
+              <YAxis
+                domain={yDomain as [number, number]}
+                tickLine={false}
+                axisLine={false}
+                width={42}
+                tick={{ fill: "#9ca3af", fontSize: 11 }}
+                tickFormatter={(v: number) => formatHMFromExtended(v)}
+              />
+              <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
+              <Line
+                type="monotone"
+                dataKey="sleepExt"
+                stroke={primary}
+                strokeWidth={2.5}
+                connectNulls={false}
+                dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                isAnimationActive
+              />
+              <Line
+                type="monotone"
+                dataKey="wakeExt"
+                stroke={primary}
+                strokeWidth={2.5}
+                connectNulls={false}
+                dot={{ r: 3, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                isAnimationActive
+              />
+              <Tooltip
+                content={<ReportSleepTooltip />}
+                cursor={{ stroke: "#d1d5db", strokeDasharray: "4 4" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "var(--habit-text)" }}>
           {t("report.chart.points")}
+          {pointsIsDemo ? (
+            <span className="habit-report-demo-badge habit-report-demo-badge--title" role="note">
+              {t("report.chart.demoShort")}
+            </span>
+          ) : null}
         </h2>
-        {showPointsChart ? (
-          <div style={{ height: 200, marginTop: 10 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={pointsSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-                <XAxis
-                  dataKey="key"
-                  tickLine={false}
-                  axisLine={false}
-                  height={50}
-                  interval={0}
-                  tick={(p) => CustomXAxisTick(p, chartLabelByKeyPoints)}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  width={36}
-                  tick={{ fill: "#9ca3af", fontSize: 11 }}
-                />
-                <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
-                <Line
-                  type="monotone"
-                  dataKey="net"
-                  stroke={primary}
-                  strokeWidth={3}
-                  dot={{ r: 3.5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  activeDot={{ r: 5.5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
-                  isAnimationActive
-                />
-                <Tooltip content={<ReportPointsTooltip />} cursor={{ stroke: "#d1d5db", strokeDasharray: "4 4" }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div style={{ ...emptyCardStyle, marginTop: 12, marginBottom: 0 }}>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--habit-text-secondary)" }}>
-              {t("report.chart.emptyHint")}
-            </p>
-          </div>
-        )}
+        <div className="habit-report-chart-frame" style={{ height: 200, marginTop: 10 }}>
+          {pointsIsDemo ? (
+            <div className="habit-report-demo-film" role="presentation" aria-hidden>
+              <span className="habit-report-demo-film__caption">{t("report.chart.demoBadge")}</span>
+            </div>
+          ) : null}
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={pointsSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <XAxis
+                dataKey="key"
+                tickLine={false}
+                axisLine={false}
+                height={50}
+                interval={0}
+                tick={(p) => CustomXAxisTick(p, chartLabelByKeyPoints)}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                width={36}
+                tick={{ fill: "#9ca3af", fontSize: 11 }}
+              />
+              <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
+              <Line
+                type="monotone"
+                dataKey="net"
+                stroke={primary}
+                strokeWidth={3}
+                dot={{ r: 3.5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                activeDot={{ r: 5.5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}
+                isAnimationActive
+              />
+              <Tooltip content={<ReportPointsTooltip />} cursor={{ stroke: "#d1d5db", strokeDasharray: "4 4" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <h2 className="habit-section-title" style={{ marginTop: 4 }}>

@@ -197,6 +197,8 @@ export const ZH = {
   "report.chart.points": "执行力趋势（近 7 天）",
   "report.chart.emptyHint": "开始打卡，累积数据即可生成趋势图。",
   "report.chart.emptySleep": "在打卡页记录入睡/起床后，将在此显示作息曲线。",
+  "report.chart.demoShort": "示例",
+  "report.chart.demoBadge": "示例数据 (Demo) · 你的真实趋势将在打卡后生成",
   "report.sleepTooltip.noData": "当日无完整入睡/起床时间记录",
   "report.ledger": "积分流水（近 30 天）",
   "report.ledger.empty": "近 30 天暂无流水",
