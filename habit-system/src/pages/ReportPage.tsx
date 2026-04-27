@@ -6,6 +6,7 @@ import { addDays, todayIsoLocal } from "../lib/dateLocal";
 import { useAppConfig } from "../config/appConfig";
 import { fetchHabitCatalogFromSupabase } from "../lib/fetchHabitCatalogFromSupabase";
 import { loadHabitCatalog, type HabitCatalogState } from "../lib/habitListStorage";
+import { buildHabitLedgerRowsFromCatalog, type CatalogLedgerRow } from "../lib/reportLedgerFromCatalog";
 import {
   buildReportChartDisplay,
   type ReportPointsPoint,
@@ -26,14 +27,7 @@ import {
 
 type Lang = "zh" | "en";
 
-type LedgerRow = {
-  id: number;
-  habit_date: string;
-  created_at: string;
-  amount: number;
-  source_type: string;
-  title: string;
-};
+type LedgerRow = CatalogLedgerRow;
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -250,13 +244,10 @@ export function ReportPage() {
   const chartLabelByKeySleep = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
   const end = todayIsoLocal();
   const start = addDays(end, -30);
-  const [ledger, setLedger] = useState<LedgerRow[]>([]);
-  const [ledgerErr, setLedgerErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLedger([]);
-    setLedgerErr(null);
-  }, [start, end]);
+  const ledger = useMemo(
+    () => buildHabitLedgerRowsFromCatalog(catalog, start, end, lang as Lang),
+    [catalog, start, end, lang]
+  );
 
   const yDomain = useMemo(() => {
     const vals: number[] = [];
@@ -402,7 +393,6 @@ export function ReportPage() {
       <h2 className="habit-section-title" style={{ marginTop: 4 }}>
         {t("report.ledger")}
       </h2>
-      {ledgerErr ? <p className="habit-error" style={{ marginBottom: 8 }}>{ledgerErr}</p> : null}
       <div className="habit-wallet-sheet" style={{ marginBottom: 12 }}>
         <ul className="habit-wallet-list">
           {ledger.map((r) => (
@@ -423,7 +413,7 @@ export function ReportPage() {
             </li>
           ))}
         </ul>
-        {ledger.length === 0 && !ledgerErr ? (
+        {ledger.length === 0 ? (
           <p className="habit-muted" style={{ padding: "0 4px 12px" }}>
             {t("report.ledger.empty")}
           </p>
