@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { HabitBottomSheet } from "./HabitBottomSheet";
 import { useLanguage } from "../context/LanguageContext";
-import type { HabitDef, HabitSchedule, HabitTargetType } from "../lib/habitListStorage";
+import { normalizeSavedCompletePoints, type HabitDef, type HabitSchedule, type HabitTargetType } from "../lib/habitListStorage";
 import type { TransKey } from "../locales/zh";
 
-type AddPreset = 5 | 10 | 15;
 type PenaltyPreset = 0 | 5 | 10;
 
 type Props = {
@@ -19,7 +18,8 @@ type Props = {
 export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null }: Props) {
   const { t } = useLanguage();
   const [name, setName] = useState("");
-  const [pts, setPts] = useState<AddPreset>(10);
+  /** 完成加分：支持空串（提交时按 10）与显式 0 */
+  const [pointsInput, setPointsInput] = useState("10");
   const [pen, setPen] = useState<PenaltyPreset>(0);
   const [freq, setFreq] = useState<"daily" | "week">("daily");
   const [weekDays, setWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -32,7 +32,8 @@ export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null
     const h = editingHabit;
     if (h) {
       setName(h.name);
-      setPts((h.completePoints as AddPreset) === 5 || h.completePoints === 10 || h.completePoints === 15 ? (h.completePoints as AddPreset) : 10);
+      const cp = h.completePoints;
+      setPointsInput(cp === undefined || cp === null ? "10" : String(cp));
       setPen((h.penalty as PenaltyPreset) === 0 || h.penalty === 5 || h.penalty === 10 ? (h.penalty as PenaltyPreset) : 0);
       if (h.schedule?.type === "weekdays" && h.schedule.days?.length) {
         setFreq("week");
@@ -45,7 +46,7 @@ export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null
       setTargetTime(h.targetTime && /^\d{2}:\d{2}$/.test(h.targetTime) ? h.targetTime : "07:00");
     } else {
       setName("");
-      setPts(10);
+      setPointsInput("10");
       setPen(0);
       setFreq("daily");
       setWeekDays([1, 2, 3, 4, 5]);
@@ -71,7 +72,7 @@ export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null
     setBusy(true);
     const payload: Omit<HabitDef, "id" | "systemKey" | "streak"> & { id?: string; streak?: number } = {
       name: name.trim(),
-      completePoints: pts,
+      completePoints: normalizeSavedCompletePoints(pointsInput),
       penalty: pen,
       schedule,
       targetType,
@@ -137,6 +138,42 @@ export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null
         </>
       ) : null}
 
+      <span className="habit-form-label">{t("habitNew.points")}</span>
+      <p className="habit-muted" style={{ fontSize: 12, margin: "0 0 8px" }}>
+        {t("habitNew.pointsHint")}
+      </p>
+      <div className="habit-point-chips" style={{ marginBottom: 6 }}>
+        {([5, 10, 15] as const).map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={`habit-point-chip${String(n) === pointsInput.trim() ? " habit-point-chip--active" : ""}`}
+            onClick={() => {
+              setPointsInput(String(n));
+            }}
+            title={t("habitNew.pointsQuick", { n })}
+          >
+            +{n}
+          </button>
+        ))}
+      </div>
+      <label className="habit-form-label" htmlFor="new-habit-points" style={{ marginTop: 4 }}>
+        {t("habitNew.pointsField")}
+      </label>
+      <input
+        id="new-habit-points"
+        className="habit-input-minimal"
+        type="number"
+        inputMode="numeric"
+        min={0}
+        step={1}
+        placeholder="10"
+        value={pointsInput}
+        onChange={(e) => setPointsInput(e.target.value)}
+        style={{ fontSize: 16, marginBottom: 6 }}
+        autoComplete="off"
+      />
+
       <span className="habit-form-label">{t("habitNew.freq")}</span>
       <div className="habit-task-kind-row" style={{ marginBottom: 8 }}>
         <button
@@ -171,20 +208,6 @@ export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null
           })}
         </div>
       ) : null}
-
-      <span className="habit-form-label">{t("habitNew.points")}</span>
-      <div className="habit-point-chips">
-        {([5, 10, 15] as const).map((n) => (
-          <button
-            key={n}
-            type="button"
-            className={`habit-point-chip${pts === n ? " habit-point-chip--active" : ""}`}
-            onClick={() => setPts(n)}
-          >
-            +{n}
-          </button>
-        ))}
-      </div>
 
       <span className="habit-form-label">{t("habitNew.penalty")}</span>
       <div className="habit-point-chips">

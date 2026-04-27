@@ -5,7 +5,9 @@ import {
   type HabitDef,
   applyLocalToggle,
   getCustomDoneForDate,
+  getRecordedTimeIso,
   loadHabitCatalog,
+  normalizeSavedCompletePoints,
   newHabitId,
   saveHabitCatalog,
   type HabitSystemKey,
@@ -74,7 +76,7 @@ export function useHabitCatalog() {
         const row: HabitDef = {
           id,
           name: def.name,
-          completePoints: def.completePoints,
+          completePoints: normalizeSavedCompletePoints(def.completePoints),
           penalty: def.penalty,
           streak: Number.isFinite(def.streak) ? Math.max(0, Math.round(def.streak as number)) : 0,
           systemKey: def.systemKey,
@@ -93,7 +95,11 @@ export function useHabitCatalog() {
   const updateHabit = useCallback(
     (id: string, patch: Partial<Pick<HabitDef, "name" | "completePoints" | "penalty" | "schedule" | "targetType" | "targetTime">>) => {
       setCatalog((s) => {
-        const items = s.items.map((it) => (it.id === id ? ({ ...it, ...patch } as HabitDef) : it));
+        const nextPatch =
+          patch.completePoints === undefined
+            ? patch
+            : { ...patch, completePoints: normalizeSavedCompletePoints(patch.completePoints) };
+        const items = s.items.map((it) => (it.id === id ? ({ ...it, ...nextPatch } as HabitDef) : it));
         const n = { ...s, items };
         saveHabitCatalog(n);
         return n;
@@ -113,22 +119,6 @@ export function useHabitCatalog() {
     []
   );
 
-  const bumpHabitStreak = useCallback((habitId: string, delta: number) => {
-    if (!delta) return;
-    setCatalog((s) => {
-      let touched = false;
-      const items = s.items.map((it) => {
-        if (it.id !== habitId) return it;
-        touched = true;
-        return { ...it, streak: Math.max(0, (it.streak ?? 0) + delta) };
-      });
-      if (!touched) return s;
-      const n = { ...s, items };
-      saveHabitCatalog(n);
-      return n;
-    });
-  }, []);
-
   const reload = useCallback(() => {
     setCatalog(loadHabitCatalog());
   }, []);
@@ -147,7 +137,6 @@ export function useHabitCatalog() {
     addHabit,
     updateHabit,
     toggleLocalHabit,
-    bumpHabitStreak,
     reload,
   };
 }
@@ -157,6 +146,11 @@ export function getDone(def: HabitDef, daily: HabitDaily, state: HabitCatalogSta
   if (def.systemKey) {
     if (localDone) return true;
     return isSystemKeyDone(daily, def.systemKey);
+  }
+  /** 时间型：以 customDone 或 recordedTimes 任一为已打卡（与 applyTimeHabitCheckIn 写入一致，避免只写了一边导致不加分） */
+  if (def.targetType === "time") {
+    if (localDone) return true;
+    return Boolean(getRecordedTimeIso(state, def.id, date));
   }
   return localDone;
 }

@@ -14,6 +14,7 @@ import {
   isHabitDueOnWeekday,
   type HabitCatalogState,
   type HabitDef,
+  habitRewardPoints,
 } from "../lib/habitListStorage";
 import { todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
 import type { TransKey } from "../locales/zh";
@@ -152,7 +153,7 @@ export function HomePage() {
   const timeLocale = lang === "en" ? "en-GB" : "zh-CN";
   const { toast } = useHabitToast();
   const { getEffectiveAvailable, spendableDelta } = useMainlineLoop();
-  const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
+  const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, reload: reloadCatalog } = useHabitCatalog();
 
   const [busy] = useState<string | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
@@ -205,20 +206,17 @@ export function HomePage() {
       const was = getDone(def, daily, catalog, day);
       const now = !was;
       toggleLocalHabit(day, def, was, now, clockIso);
-      bumpHabitStreak(def.id, now ? 1 : -1);
+      const pts = habitRewardPoints(def);
+      const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
       const after =
-        was && !now
-          ? -def.completePoints - (def.penalty > 0 ? def.penalty : 0)
-          : !was && now
-            ? def.completePoints
-            : 0;
+        was && !now ? -pts - pen : !was && now ? pts : 0;
       toast({
         title: now ? def.name : `${def.name}${t("home.undo.suffix")}`,
         points: after,
         tone: after < 0 ? "negative" : "default",
       });
     },
-    [bumpHabitStreak, catalog, daily, day, t, toast, toggleLocalHabit, isEditing]
+    [catalog, daily, day, t, toast, toggleLocalHabit, isEditing]
   );
 
   const runSystemToggle = useCallback(

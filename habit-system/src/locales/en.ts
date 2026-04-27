@@ -232,6 +232,10 @@ export const EN: Record<TransKey, string> = {
   "habitNew.week.5": "F",
   "habitNew.week.6": "S",
   "habitNew.points": "Points on done",
+  "habitNew.pointsHint":
+    "Non-negative integer; empty saves as 10. Only typing 0 saves 0. Works for check-off and time habits.",
+  "habitNew.pointsField": "Reward points",
+  "habitNew.pointsQuick": "Quick +{{n}}",
   "habitNew.penalty": "Penalty if missed (optional)",
   "habitNew.penaltyNone": "None",
   "habitNew.save": "Save",

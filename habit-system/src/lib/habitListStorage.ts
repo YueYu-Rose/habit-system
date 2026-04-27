@@ -36,6 +36,26 @@ export type HabitDef = {
 
 export type HabitDayTimes = { sleepIso?: string; wakeIso?: string };
 
+/**
+ * 保存/解析习惯时的「完成加分」：未填、非法值 → 10；显式 0 保留 0。
+ * 用于表单提交与 JSON 回读，避免 time 型习惯在序列化中丢字段变成 undefined→0。
+ */
+export function normalizeSavedCompletePoints(value: unknown): number {
+  if (value === null || value === undefined || value === "") return 10;
+  if (typeof value === "string" && value.trim() === "") return 10;
+  const n = typeof value === "string" ? parseInt(value.trim(), 10) : Number(value);
+  if (n === 0) return 0;
+  if (!Number.isFinite(n) || n < 0) return 10;
+  return Math.round(n);
+}
+
+/** 结算用：对勾/计分用；0 分表示该习惯不加分（与显式设 0 一致） */
+export function habitRewardPoints(def: HabitDef): number {
+  const n = Number(def.completePoints);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round(n);
+}
+
 export type HabitCatalogState = {
   v: 1;
   items: HabitDef[];
@@ -75,7 +95,7 @@ export const defaultHabitItemsZh: HabitDef[] = [
   { id: "def-shower", name: "已洗澡", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
   { id: "def-english", name: "英语口语", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
   { id: "def-cantonese", name: "粤语 / 多邻国", completePoints: 10, penalty: 10, streak: 0, systemKey: "cantonese", schedule: { type: "daily" } },
-  { id: "def-exercise", name: "运动", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
+  { id: "def-exercise", name: "运动", completePoints: 15, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];
 
 /** 与 defaultHabitItemsZh 同 id、按语言分开展示名（推广 / 自测用） */
@@ -105,7 +125,7 @@ export const defaultHabitItemsEn: HabitDef[] = [
   { id: "def-shower", name: "Shower done", completePoints: 5, penalty: 0, streak: 0, systemKey: "shower", schedule: { type: "daily" } },
   { id: "def-english", name: "Speaking English", completePoints: 10, penalty: 10, streak: 0, systemKey: "english", schedule: { type: "daily" } },
   { id: "def-cantonese", name: "Cantonese / Duolingo", completePoints: 10, penalty: 10, streak: 0, systemKey: "cantonese", schedule: { type: "daily" } },
-  { id: "def-exercise", name: "Exercise", completePoints: 0, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
+  { id: "def-exercise", name: "Exercise", completePoints: 15, penalty: 0, streak: 0, systemKey: "exercise", schedule: { type: "daily" } },
 ];
 
 export const DEFAULT_HABIT_TEMPLATE_IDS: readonly string[] = defaultHabitItemsZh.map((h) => h.id);
@@ -134,15 +154,24 @@ function normalizeItem(it: HabitDef): HabitDef {
   const schedule: HabitSchedule = it.schedule ?? { type: "daily" };
   const streak = Number.isFinite(it.streak) ? Math.max(0, Math.round(it.streak)) : 0;
   const targetType: HabitTargetType = it.targetType === "time" ? "time" : "boolean";
+  const completePoints = normalizeSavedCompletePoints(it.completePoints);
+  const penaltyRaw = it.penalty;
+  const penalty =
+    penaltyRaw == null || penaltyRaw === "" || (typeof penaltyRaw === "string" && penaltyRaw.trim() === "")
+      ? 0
+      : (() => {
+          const p = Number(penaltyRaw);
+          return Number.isFinite(p) && p >= 0 ? Math.round(p) : 0;
+        })();
   let targetTime: string | undefined;
   if (it.targetTime && /^\d{1,2}:\d{2}$/.test(it.targetTime.trim())) {
     const [hh, mm] = it.targetTime.split(":");
     targetTime = `${String(Math.min(23, Math.max(0, parseInt(hh, 10) || 0))).padStart(2, "0")}:${String(Math.min(59, Math.max(0, parseInt(mm, 10) || 0))).padStart(2, "0")}`;
   }
   if (schedule.type === "weekdays" && (!Array.isArray(schedule.days) || schedule.days.length === 0)) {
-    return { ...it, streak, schedule: { type: "daily" }, targetType, targetTime };
+    return { ...it, streak, completePoints, penalty, schedule: { type: "daily" }, targetType, targetTime };
   }
-  return { ...it, streak, schedule, targetType, targetTime };
+  return { ...it, streak, completePoints, penalty, schedule, targetType, targetTime };
 }
 
 function parse(raw: string | null): HabitCatalogState {
@@ -284,12 +313,14 @@ export function applyLocalToggle(
   } else {
     delete day[habitId];
   }
+  const pts = habitRewardPoints(def);
+  const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
   let w = state.customWallet || 0;
   if (!wasDone && nowDone) {
-    w += def.completePoints;
+    w += pts;
   } else if (wasDone && !nowDone) {
-    w -= def.completePoints;
-    if (def.penalty > 0) w -= def.penalty;
+    w -= pts;
+    if (pen > 0) w -= pen;
   }
   const streakDelta = !wasDone && nowDone ? 1 : wasDone && !nowDone ? -1 : 0;
   const items =
