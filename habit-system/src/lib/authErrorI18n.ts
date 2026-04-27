@@ -10,6 +10,7 @@ export type AuthErrorTransKey = Extract<
   | "auth.error.invalidEmail"
   | "auth.error.invalidOtp"
   | "auth.error.missingEmail"
+  | "auth.error.missingPassword"
   | "auth.error.missingOtp"
   | "auth.error.rateLimit"
   | "auth.error.network"

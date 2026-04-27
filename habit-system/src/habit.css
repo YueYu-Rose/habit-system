@@ -1796,107 +1796,97 @@ html:lang(en) .habit-tagline {
   line-height: 1.45;
 }
 
-/* 全 OTP 登录：蓝色强调输入与主按钮，移动端大触控区 */
-.habit-input-minimal--auth-otp {
-  font-size: 1rem;
-  border-radius: 10px;
-  border: 1px solid #dbeafe;
-  border-bottom: 1px solid #dbeafe;
-  padding: 14px 14px;
-  margin-bottom: 12px;
-  background: #f8fafc;
+.habit-auth-card--pro {
+  padding: 20px 18px 24px;
 }
 
-.habit-input-minimal--auth-otp:focus {
-  border-color: #3b82f6;
-  border-bottom-color: #3b82f6;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 20%, transparent);
+.habit-auth-header-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
 }
 
-.habit-auth-otp-actions {
-  margin-bottom: 8px;
-}
-
-.habit-auth-otp-btn {
-  width: 100%;
-  display: block;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1rem;
-  font-family: inherit;
-  padding: 15px 18px;
-  min-height: 50px;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s;
-}
-
-.habit-auth-otp-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.habit-auth-otp-btn--send {
-  margin-bottom: 0;
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-  color: #1d4ed8;
-  border: 1px solid #93c5fd;
-  box-shadow: 0 1px 0 rgba(37, 99, 235, 0.12);
-}
-
-.habit-auth-otp-btn--send:not(:disabled):active {
-  transform: scale(0.99);
-}
-
-.habit-auth-otp-btn--primary {
-  margin-top: 4px;
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 14px color-mix(in srgb, #2563eb 35%, transparent);
-}
-
-.habit-auth-otp-btn--primary:not(:disabled):active {
-  transform: scale(0.99);
-}
-
-.habit-auth-otp-digits {
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 1.45rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  text-align: center;
-  padding: 16px 14px 16px 22px;
-  border-radius: 12px;
-  border: 2px solid #3b82f6;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 6px;
-  outline: none;
-  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.habit-auth-otp-digits::placeholder {
-  color: #94a3b8;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  font-size: 0.95rem;
-}
-
-.habit-auth-otp-digits:focus {
-  background: #ffffff;
-  box-shadow: 0 0 0 4px color-mix(in srgb, #3b82f6 22%, transparent);
-}
-
-.habit-auth-otp-micro {
+.habit-auth-subtitle--pro {
   margin: 0 0 12px;
-  font-size: 0.8rem;
+  min-height: 2.5em;
+}
+
+.habit-auth-tabs {
+  margin-bottom: 16px;
+}
+
+.habit-auth-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.habit-auth-page .habit-auth-stack .habit-form-label {
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
+/* 登录/注册等宽列：高保真间距；16px 字级减轻 iOS 聚焦缩放 */
+.habit-auth-field {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 50px;
+  margin-bottom: 12px;
+  padding: 14px 14px;
+  font-size: 16px;
   line-height: 1.4;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--habit-radius, 10px);
+  background: #fafafa;
+  color: var(--habit-text);
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.habit-auth-field::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.habit-auth-field:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--theme-primary) 55%, #e5e7eb);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 18%, transparent);
+}
+
+.habit-auth-field:-webkit-autofill,
+.habit-auth-field:-webkit-autofill:hover,
+.habit-auth-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--habit-text);
+  box-shadow: 0 0 0 1000px #fafafa inset;
+}
+
+.habit-auth-field--code {
+  text-align: center;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.18em;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.habit-auth-hint {
+  margin: -2px 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
   color: var(--habit-text-secondary);
+}
+
+.habit-auth-submit {
+  margin-top: 6px;
+}
+
+.habit-auth-btn-send {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* 注册 · 验证码：横向 flex，输入区占满剩余宽度，发送按钮不压缩、不换行 */

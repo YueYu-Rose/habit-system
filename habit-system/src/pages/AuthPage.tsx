@@ -12,13 +12,14 @@ type TabMode = "login" | "register";
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const { sendEmailOtp, verifyEmailOtp } = useAuth();
+  const { loginWithPassword, sendRegisterOtp, registerWithOtpAndPassword } = useAuth();
   const { toast } = useHabitToast();
   const { t } = useLanguage();
   const [mode, setMode] = useState<TabMode>("login");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -28,71 +29,95 @@ export function AuthPage() {
     return () => clearTimeout(id);
   }, [cooldown]);
 
-  const setModeWithReset = (m: TabMode) => {
-    setMode(m);
-    setOtpSent(false);
+  const resetRegisterFlow = () => {
     setOtp("");
+    setCodeSent(false);
     setCooldown(0);
   };
 
-  const onSend = async () => {
+  const setModeWithReset = (m: TabMode) => {
+    setMode(m);
+    setPassword("");
+    resetRegisterFlow();
+  };
+
+  const onSendRegisterCode = async () => {
     if (busy || cooldown > 0) return;
     const em = email.trim();
     if (!em) {
-      toast({ title: t("auth.toast.fillLogin"), tone: "negative" });
+      toast({ title: t("auth.toast.fillRegister"), tone: "negative" });
+      return;
+    }
+    if (!password) {
+      toast({ title: t("auth.toast.registerNeedPassword"), tone: "negative" });
       return;
     }
     setBusy(true);
     try {
-      const shouldCreateUser = mode === "register";
-      const r = await sendEmailOtp(email, shouldCreateUser);
+      const r = await sendRegisterOtp(email);
       if (!r.ok) {
         toast({ title: formatAuthErrorForUi(r, t), tone: "negative" });
         return;
       }
-      setOtpSent(true);
+      setCodeSent(true);
       setOtp("");
       setCooldown(OTP_COOLDOWN_SEC);
-      toast({
-        title: isSupabaseConfigured() ? t("auth.toast.codeSentEmail") : t("auth.toast.codeSent"),
-        tone: "positive",
-      });
+      const a = isSupabaseConfigured() ? t("auth.toast.codeSentEmail") : t("auth.toast.codeSent");
+      const b = t("auth.codeSent.tip");
+      toast({ title: `${a} ${b}`, tone: "positive" });
     } finally {
       setBusy(false);
     }
   };
 
-  const onVerify = async () => {
+  const onRegisterSubmit = async () => {
     if (busy) return;
+    if (!codeSent) {
+      toast({ title: t("auth.toast.sendCodeFirst"), tone: "negative" });
+      return;
+    }
     setBusy(true);
     try {
-      const r = await verifyEmailOtp(email, otp);
+      const r = await registerWithOtpAndPassword(email, otp, password);
       if (!r.ok) {
         toast({ title: formatAuthErrorForUi(r, t), tone: "negative" });
         return;
       }
-      toast({
-        title: mode === "login" ? t("auth.toast.loginOk") : t("auth.toast.registerOkLoggedIn"),
-        tone: "positive",
-      });
+      toast({ title: t("auth.toast.registerOkLoggedIn"), tone: "positive" });
       navigate("/", { replace: true });
     } finally {
       setBusy(false);
     }
   };
 
+  const onLoginSubmit = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await loginWithPassword(email, password);
+      if (!r.ok) {
+        toast({ title: formatAuthErrorForUi(r, t), tone: "negative" });
+        return;
+      }
+      toast({ title: t("auth.toast.loginOk"), tone: "positive" });
+      navigate("/", { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const lead = mode === "login" ? t("auth.login.lead") : t("auth.register.lead");
+
   return (
     <div className="habit-auth-page">
-      <div className="habit-auth-card">
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div className="habit-auth-card habit-auth-card--pro">
+        <div className="habit-auth-header-row">
           <LanguageSwitcher />
         </div>
         <h1 className="habit-auth-title">{mode === "login" ? t("auth.title.login") : t("auth.title.register")}</h1>
-        <p className="habit-auth-subtitle" style={{ marginBottom: 14 }}>
-          {t("auth.otp.lead")}
-        </p>
+        <p className="habit-auth-subtitle habit-auth-subtitle--pro">{lead}</p>
 
-        <div className="habit-task-kind-row" style={{ marginBottom: 14 }}>
+        <div className="habit-task-kind-row habit-auth-tabs">
           <button
             type="button"
             className={`habit-task-kind-pill${mode === "login" ? " habit-task-kind-pill--active" : ""}`}
@@ -109,61 +134,116 @@ export function AuthPage() {
           </button>
         </div>
 
-        <label className="habit-form-label" htmlFor="auth-email">
-          {t("auth.email")}
-        </label>
-        <input
-          id="auth-email"
-          className="habit-input-minimal habit-input-minimal--auth-otp"
-          type="email"
-          placeholder={t("auth.ph.email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          inputMode="email"
-        />
+        {mode === "login" ? (
+          <div className="habit-auth-stack">
+            <label className="habit-form-label" htmlFor="auth-email">
+              {t("auth.email")}
+            </label>
+            <input
+              id="auth-email"
+              className="habit-auth-field"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint="next"
+              placeholder={t("auth.ph.email")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-        <div className="habit-auth-otp-actions">
-          <button
-            type="button"
-            className="habit-auth-otp-btn habit-auth-otp-btn--send"
-            disabled={busy || cooldown > 0}
-            onClick={() => void onSend()}
-          >
-            {cooldown > 0 ? t("auth.sendCode.cooldown", { n: cooldown }) : t("auth.sendCode")}
-          </button>
-        </div>
+            <label className="habit-form-label" htmlFor="auth-password">
+              {t("auth.password")}
+            </label>
+            <input
+              id="auth-password"
+              className="habit-auth-field"
+              type="password"
+              autoComplete="current-password"
+              enterKeyHint="go"
+              placeholder={t("auth.ph.password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-        {otpSent ? (
-          <>
-            <label className="habit-form-label" htmlFor="auth-otp">
+            <button
+              type="button"
+              className="habit-btn habit-btn--force-white habit-auth-submit"
+              disabled={busy}
+              onClick={() => void onLoginSubmit()}
+            >
+              {t("auth.submit")}
+            </button>
+          </div>
+        ) : (
+          <div className="habit-auth-stack">
+            <label className="habit-form-label" htmlFor="reg-email">
+              {t("auth.email")}
+            </label>
+            <input
+              id="reg-email"
+              className="habit-auth-field"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint="next"
+              placeholder={t("auth.ph.email")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <label className="habit-form-label" htmlFor="reg-password">
+              {t("auth.password")}
+            </label>
+            <input
+              id="reg-password"
+              className="habit-auth-field"
+              type="password"
+              autoComplete="new-password"
+              enterKeyHint="next"
+              placeholder={t("auth.ph.password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button
+              type="button"
+              className="habit-btn habit-btn--force-white habit-auth-submit habit-auth-btn-send"
+              disabled={busy || cooldown > 0}
+              onClick={() => void onSendRegisterCode()}
+            >
+              {cooldown > 0 ? t("auth.sendCode.cooldown", { n: cooldown }) : t("auth.sendCode")}
+            </button>
+
+            <label className="habit-form-label" htmlFor="reg-otp">
               {t("auth.code")}
             </label>
             <input
-              id="auth-otp"
-              className="habit-auth-otp-digits"
+              id="reg-otp"
+              className="habit-auth-field habit-auth-field--code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={8}
+              enterKeyHint="go"
               placeholder={t("auth.ph.otp8")}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              aria-describedby="auth-otp-hint"
+              aria-describedby="reg-otp-hint"
             />
-            <p id="auth-otp-hint" className="habit-auth-otp-micro">
+            <p id="reg-otp-hint" className="habit-auth-hint">
               {t("auth.otp.hint")}
             </p>
+
             <button
               type="button"
-              className="habit-auth-otp-btn habit-auth-otp-btn--primary"
+              className="habit-btn habit-btn--force-white habit-auth-submit"
               disabled={busy}
-              onClick={() => void onVerify()}
+              onClick={() => void onRegisterSubmit()}
             >
-              {t("auth.submitVerify")}
+              {t("auth.submitRegister")}
             </button>
-          </>
-        ) : null}
+          </div>
+        )}
       </div>
     </div>
   );

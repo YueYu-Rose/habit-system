@@ -32,8 +32,11 @@ type AuthContextValue = {
   user: User | null;
   /** 无 Supabase 时沿用本地 mock 会话 token */
   token: string;
-  sendEmailOtp: (email: string, shouldCreateUser: boolean) => Promise<SendOtpResult>;
-  verifyEmailOtp: (email: string, token: string) => Promise<LoginResult>;
+  loginWithPassword: (email: string, password: string) => Promise<LoginResult>;
+  /** 注册：向邮箱发送验证码（新用户应创建） */
+  sendRegisterOtp: (email: string) => Promise<SendOtpResult>;
+  /** 注册：校验邮箱 OTP 后设置密码以完成账户 */
+  registerWithOtpAndPassword: (email: string, otp: string, password: string) => Promise<LoginResult>;
   logout: () => void;
 };
 
@@ -94,7 +97,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ensureMockSeedForPromotion();
   }, [resolving, user, mockSession.loggedIn]);
 
-  const sendEmailOtp = useCallback(async (email: string, shouldCreateUser: boolean): Promise<SendOtpResult> => {
+  const loginWithPassword = useCallback(async (email: string, password: string): Promise<LoginResult> => {
+    const em = email.trim();
+    if (!em) {
+      return { ok: false, errorKey: "auth.error.missingEmail" };
+    }
+    if (!password) {
+      return { ok: false, errorKey: "auth.error.missingPassword" };
+    }
+    if (!isSupabaseConfigured()) {
+      const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
+      saveAuthSession(next);
+      setMockSession(next);
+      initHabitThemeOnLoad(appConfig.mode);
+      return { ok: true };
+    }
+    const { error } = await getSupabase()!.auth.signInWithPassword({ email: em, password });
+    if (error) {
+      const { key, detail } = classifySupabaseAuthError(error);
+      return { ok: false, errorKey: key, errorDetail: detail };
+    }
+    initHabitThemeOnLoad(appConfig.mode);
+    return { ok: true };
+  }, []);
+
+  const sendRegisterOtp = useCallback(async (email: string): Promise<SendOtpResult> => {
     const em = email.trim();
     if (!em) {
       return { ok: false, errorKey: "auth.error.missingEmail" };
@@ -104,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { error } = await getSupabase()!.auth.signInWithOtp({
       email: em,
-      options: { shouldCreateUser },
+      options: { shouldCreateUser: true },
     });
     if (error) {
       const { key, detail } = classifySupabaseAuthError(error);
@@ -113,34 +140,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, []);
 
-  const verifyEmailOtp = useCallback(async (email: string, token: string): Promise<LoginResult> => {
-    const em = email.trim();
-    const raw = token.replace(/\D/g, "");
-    if (!em) {
-      return { ok: false, errorKey: "auth.error.missingEmail" };
-    }
-    if (!raw) {
-      return { ok: false, errorKey: "auth.error.missingOtp" };
-    }
-    if (!/^\d{8}$/.test(raw)) {
-      return { ok: false, errorKey: "auth.error.invalidOtp" };
-    }
-    if (!isSupabaseConfigured()) {
-      const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
-      saveAuthSession(next);
-      setMockSession(next);
+  const registerWithOtpAndPassword = useCallback(
+    async (email: string, token: string, password: string): Promise<LoginResult> => {
+      const em = email.trim();
+      const raw = token.replace(/\D/g, "");
+      if (!em) {
+        return { ok: false, errorKey: "auth.error.missingEmail" };
+      }
+      if (!raw) {
+        return { ok: false, errorKey: "auth.error.missingOtp" };
+      }
+      if (!/^\d{8}$/.test(raw)) {
+        return { ok: false, errorKey: "auth.error.invalidOtp" };
+      }
+      if (!password || password.length < 6) {
+        return { ok: false, errorKey: "auth.error.weakPassword" };
+      }
+      if (!isSupabaseConfigured()) {
+        const next = { loggedIn: true, email: em.toLowerCase(), token: mockToken() };
+        saveAuthSession(next);
+        setMockSession(next);
+        initHabitThemeOnLoad(appConfig.mode);
+        return { ok: true };
+      }
+      const sb = getSupabase()!;
+      const { error: vErr } = await sb.auth.verifyOtp({ email: em, token: raw, type: "email" });
+      if (vErr) {
+        const { key, detail } = classifySupabaseAuthError(vErr);
+        return { ok: false, errorKey: key, errorDetail: detail };
+      }
+      const { error: pErr } = await sb.auth.updateUser({ password });
+      if (pErr) {
+        const { key, detail } = classifySupabaseAuthError(pErr);
+        void sb.auth.signOut();
+        return { ok: false, errorKey: key, errorDetail: detail };
+      }
       initHabitThemeOnLoad(appConfig.mode);
       return { ok: true };
-    }
-    /** 邮箱数字验证码：GoTrue 使用 `type: 'email'`，与 signInWithOtp 的登录/注册场景均一致。 */
-    const { error } = await getSupabase()!.auth.verifyOtp({ email: em, token: raw, type: "email" });
-    if (error) {
-      const { key, detail } = classifySupabaseAuthError(error);
-      return { ok: false, errorKey: key, errorDetail: detail };
-    }
-    initHabitThemeOnLoad(appConfig.mode);
-    return { ok: true };
-  }, []);
+    },
+    []
+  );
 
   const logout = useCallback(() => {
     if (isSupabaseConfigured()) {
@@ -163,11 +202,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       user: isSupabaseConfigured() ? user : null,
       token,
-      sendEmailOtp,
-      verifyEmailOtp,
+      loginWithPassword,
+      sendRegisterOtp,
+      registerWithOtpAndPassword,
       logout,
     }),
-    [resolving, isLoggedIn, email, user, token, sendEmailOtp, verifyEmailOtp, logout]
+    [resolving, isLoggedIn, email, user, token, loginWithPassword, sendRegisterOtp, registerWithOtpAndPassword, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
