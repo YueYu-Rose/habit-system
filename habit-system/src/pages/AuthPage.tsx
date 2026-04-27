@@ -48,10 +48,6 @@ export function AuthPage() {
       toast({ title: t("auth.toast.fillRegister"), tone: "negative" });
       return;
     }
-    if (!password) {
-      toast({ title: t("auth.toast.registerNeedPassword"), tone: "negative" });
-      return;
-    }
     setBusy(true);
     try {
       const r = await sendRegisterOtp(email);
@@ -106,28 +102,31 @@ export function AuthPage() {
     }
   };
 
-  const lead = mode === "login" ? t("auth.login.lead") : t("auth.register.lead");
-
   return (
-    <div className="habit-auth-page">
-      <div className="habit-auth-card habit-auth-card--pro">
+    <div className="habit-auth-page habit-auth-page--air">
+      <div className="habit-auth-card habit-auth-card--air">
         <div className="habit-auth-header-row">
           <LanguageSwitcher />
         </div>
-        <h1 className="habit-auth-title">{mode === "login" ? t("auth.title.login") : t("auth.title.register")}</h1>
-        <p className="habit-auth-subtitle habit-auth-subtitle--pro">{lead}</p>
+        <h1 className="habit-auth-title habit-auth-title--hero">
+          {mode === "login" ? t("auth.title.login") : t("auth.title.register")}
+        </h1>
 
-        <div className="habit-task-kind-row habit-auth-tabs">
+        <div className="habit-auth-pill-row" role="tablist" aria-label={t("auth.title.login") + " / " + t("auth.title.register")}>
           <button
             type="button"
-            className={`habit-task-kind-pill${mode === "login" ? " habit-task-kind-pill--active" : ""}`}
+            role="tab"
+            aria-selected={mode === "login"}
+            className={`habit-auth-pill${mode === "login" ? " habit-auth-pill--active" : ""}`}
             onClick={() => setModeWithReset("login")}
           >
             {t("auth.title.login")}
           </button>
           <button
             type="button"
-            className={`habit-task-kind-pill${mode === "register" ? " habit-task-kind-pill--active" : ""}`}
+            role="tab"
+            aria-selected={mode === "register"}
+            className={`habit-auth-pill${mode === "register" ? " habit-auth-pill--active" : ""}`}
             onClick={() => setModeWithReset("register")}
           >
             {t("auth.title.register")}
@@ -135,13 +134,13 @@ export function AuthPage() {
         </div>
 
         {mode === "login" ? (
-          <div className="habit-auth-stack">
-            <label className="habit-form-label" htmlFor="auth-email">
+          <div className="habit-auth-stack habit-auth-stack--air">
+            <label className="habit-auth-label" htmlFor="auth-email">
               {t("auth.email")}
             </label>
             <input
               id="auth-email"
-              className="habit-auth-field"
+              className="habit-auth-line"
               type="email"
               autoComplete="email"
               inputMode="email"
@@ -151,12 +150,12 @@ export function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            <label className="habit-form-label" htmlFor="auth-password">
+            <label className="habit-auth-label" htmlFor="auth-password">
               {t("auth.password")}
             </label>
             <input
               id="auth-password"
-              className="habit-auth-field"
+              className="habit-auth-line"
               type="password"
               autoComplete="current-password"
               enterKeyHint="go"
@@ -167,7 +166,7 @@ export function AuthPage() {
 
             <button
               type="button"
-              className="habit-btn habit-btn--force-white habit-auth-submit"
+              className="habit-auth-primary"
               disabled={busy}
               onClick={() => void onLoginSubmit()}
             >
@@ -175,13 +174,13 @@ export function AuthPage() {
             </button>
           </div>
         ) : (
-          <div className="habit-auth-stack">
-            <label className="habit-form-label" htmlFor="reg-email">
+          <div className="habit-auth-stack habit-auth-stack--air">
+            <label className="habit-auth-label" htmlFor="reg-email">
               {t("auth.email")}
             </label>
             <input
               id="reg-email"
-              className="habit-auth-field"
+              className="habit-auth-line"
               type="email"
               autoComplete="email"
               inputMode="email"
@@ -191,15 +190,43 @@ export function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            <label className="habit-form-label" htmlFor="reg-password">
+            <label className="habit-auth-label" htmlFor="reg-otp">
+              {t("auth.code")}
+            </label>
+            <div className="habit-auth-code-row habit-auth-code-row--air">
+              <div className="habit-auth-code-input-wrap">
+                <input
+                  id="reg-otp"
+                  className="habit-auth-line habit-auth-line--in-row"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  enterKeyHint="next"
+                  placeholder={t("auth.ph.code")}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                />
+              </div>
+              <button
+                type="button"
+                className="habit-auth-send-pill"
+                disabled={busy || cooldown > 0}
+                onClick={() => void onSendRegisterCode()}
+              >
+                {cooldown > 0 ? t("auth.sendCode.cooldown", { n: cooldown }) : t("auth.sendCode")}
+              </button>
+            </div>
+
+            <label className="habit-auth-label" htmlFor="reg-password">
               {t("auth.password")}
             </label>
             <input
               id="reg-password"
-              className="habit-auth-field"
+              className="habit-auth-line"
               type="password"
               autoComplete="new-password"
-              enterKeyHint="next"
+              enterKeyHint="go"
               placeholder={t("auth.ph.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -207,36 +234,7 @@ export function AuthPage() {
 
             <button
               type="button"
-              className="habit-btn habit-btn--force-white habit-auth-submit habit-auth-btn-send"
-              disabled={busy || cooldown > 0}
-              onClick={() => void onSendRegisterCode()}
-            >
-              {cooldown > 0 ? t("auth.sendCode.cooldown", { n: cooldown }) : t("auth.sendCode")}
-            </button>
-
-            <label className="habit-form-label" htmlFor="reg-otp">
-              {t("auth.code")}
-            </label>
-            <input
-              id="reg-otp"
-              className="habit-auth-field habit-auth-field--code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={8}
-              enterKeyHint="go"
-              placeholder={t("auth.ph.otp8")}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              aria-describedby="reg-otp-hint"
-            />
-            <p id="reg-otp-hint" className="habit-auth-hint">
-              {t("auth.otp.hint")}
-            </p>
-
-            <button
-              type="button"
-              className="habit-btn habit-btn--force-white habit-auth-submit"
+              className="habit-auth-primary"
               disabled={busy}
               onClick={() => void onRegisterSubmit()}
             >

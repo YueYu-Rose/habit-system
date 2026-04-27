@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ExerciseDurationModal } from "../components/ExerciseDurationModal";
+import { HabitTimeCheckinModal } from "../components/HabitTimeCheckinModal";
 import { NewHabitBottomSheet } from "../components/NewHabitBottomSheet";
 import { OverlayPortal } from "../components/OverlayPortal";
 import { useHabitToast } from "../context/HabitToastContext";
@@ -7,8 +8,14 @@ import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
 import { getDone, useHabitCatalog } from "../hooks/useHabitCatalog";
-import { getWeekdayForIsoDate, isHabitDueOnWeekday, type HabitDef } from "../lib/habitListStorage";
-import { todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
+import {
+  getRecordedTimeIso,
+  getWeekdayForIsoDate,
+  isHabitDueOnWeekday,
+  type HabitCatalogState,
+  type HabitDef,
+} from "../lib/habitListStorage";
+import { addDays, todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
 import type { TransKey } from "../locales/zh";
 
 type HabitDaily = {
@@ -46,6 +53,8 @@ function buildMeta(
   def: HabitDef,
   done: boolean,
   daily: HabitDaily,
+  catalog: HabitCatalogState,
+  dayStr: string,
   t: TFn,
   timeLocale: string
 ): string {
@@ -61,15 +70,19 @@ function buildMeta(
   }
   if (def.systemKey === "sleep") {
     if (!done) return t("home.meta.sleep.undone");
-    if (daily?.sleep_started_at) {
-      return t("home.meta.sleep.done", { time: fmtTime(daily.sleep_started_at, timeLocale) });
+    const iso = daily?.sleep_started_at ?? catalog.dayTimes?.[dayStr]?.sleepIso;
+    if (iso) {
+      const show = fmtTime(iso, timeLocale);
+      return t("home.meta.time.done", { name: def.name, time: show });
     }
     return t("home.meta.default.done");
   }
   if (def.systemKey === "wake") {
     if (!done) return t("home.meta.wake.undone");
-    if (daily?.wake_at) {
-      return t("home.meta.wake.done", { time: fmtTime(daily.wake_at, timeLocale) });
+    const iso = daily?.wake_at ?? catalog.dayTimes?.[dayStr]?.wakeIso;
+    if (iso) {
+      const show = fmtTime(iso, timeLocale);
+      return t("home.meta.time.done", { name: def.name, time: show });
     }
     return t("home.meta.default.done");
   }
@@ -77,6 +90,16 @@ function buildMeta(
     if (!done) return t("home.meta.shower.undone");
     if (daily?.shower_at) {
       return t("home.meta.shower.done", { time: fmtTime(daily.shower_at, timeLocale) });
+    }
+    return t("home.meta.default.done");
+  }
+  if (!def.systemKey && def.targetType === "time") {
+    if (!done) {
+      return t("home.meta.time.undone", { time: def.targetTime && def.targetTime.length > 0 ? def.targetTime : "—" });
+    }
+    const iso = getRecordedTimeIso(catalog, def.id, dayStr);
+    if (iso) {
+      return t("home.meta.time.done", { name: def.name, time: fmtTime(iso, timeLocale) });
     }
     return t("home.meta.default.done");
   }
@@ -100,16 +123,20 @@ function getPointsDisplay(def: HabitDef, done: boolean, t: TFn): { text: string;
   return { text: `+${def.completePoints}`, cls: "habit-checkin-points habit-checkin-points--pos" };
 }
 
+function needsTimeModal(def: HabitDef): boolean {
+  return def.systemKey === "sleep" || def.systemKey === "wake" || (!def.systemKey && def.targetType === "time");
+}
+
 export function HomePage() {
-  const date = todayIsoLocal();
-  const weekday = getWeekdayForIsoDate(date);
+  const [day, setDay] = useState(() => todayIsoLocal());
+  const weekday = getWeekdayForIsoDate(day);
   const { mode, showExternalIntegration } = useAppConfig();
   const isPersonal = mode === "PERSONAL";
   const { t, lang } = useLanguage();
   const timeLocale = lang === "en" ? "en-GB" : "zh-CN";
   const { toast } = useHabitToast();
   const { getEffectiveAvailable, spendableDelta } = useMainlineLoop();
-  const { catalog, removeHabit, addHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
+  const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, bumpHabitStreak, reload: reloadCatalog } = useHabitCatalog();
 
   const [d, setD] = useState<Summary | null>(null);
   const [busy] = useState<string | null>(null);
@@ -117,11 +144,13 @@ export function HomePage() {
   const [extErr, setExtErr] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [newSheet, setNewSheet] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<HabitDef | null>(null);
   const [exModal, setExModal] = useState(false);
+  const [timeModalDef, setTimeModalDef] = useState<HabitDef | null>(null);
 
   const buildLocalSummary = useCallback((): Summary => {
     return {
-      date,
+      date: day,
       availablePoints: 0,
       lifetimePoints: 0,
       weekNetPoints: 0,
@@ -131,7 +160,7 @@ export function HomePage() {
       mainline: null,
       externalTodo: { mode: "local", completionRate: ext?.rate ?? null },
     };
-  }, [date, ext?.rate]);
+  }, [day, ext?.rate]);
 
   const reload = useCallback(async () => {
     setD(buildLocalSummary());
@@ -151,10 +180,11 @@ export function HomePage() {
   const visibleHabits = catalog.items.filter((h) => isHabitDueOnWeekday(h, weekday));
 
   const localToggle = useCallback(
-    (def: HabitDef) => {
-      const was = getDone(def, daily, catalog, date);
+    (def: HabitDef, clockIso?: string | null) => {
+      if (isEditing) return;
+      const was = getDone(def, daily, catalog, day);
       const now = !was;
-      toggleLocalHabit(date, def, was, now);
+      toggleLocalHabit(day, def, was, now, clockIso);
       bumpHabitStreak(def.id, now ? 1 : -1);
       const after =
         was && !now
@@ -168,12 +198,13 @@ export function HomePage() {
         tone: after < 0 ? "negative" : "default",
       });
     },
-    [bumpHabitStreak, catalog, daily, date, t, toast, toggleLocalHabit]
+    [bumpHabitStreak, catalog, daily, day, t, toast, toggleLocalHabit, isEditing]
   );
 
   const runSystemToggle = useCallback(
     (def: HabitDef) => {
       if (!def.systemKey || isEditing) return;
+      if (def.systemKey === "sleep" || def.systemKey === "wake") return;
       localToggle(def);
     },
     [isEditing, localToggle]
@@ -182,24 +213,24 @@ export function HomePage() {
   const runExerciseFlow = useCallback(
     (def: HabitDef) => {
       if (isEditing) return;
-      const done0 = getDone(def, daily, catalog, date);
+      const done0 = getDone(def, daily, catalog, day);
       if (done0) {
         localToggle(def);
       } else {
         setExModal(true);
       }
     },
-    [catalog, daily, date, isEditing, localToggle]
+    [catalog, daily, day, isEditing, localToggle]
   );
 
   const confirmExerciseMinutes = useCallback(
     (_minutes: number) => {
       const ex = catalog.items.find((x) => x.systemKey === "exercise");
-      if (ex && !getDone(ex, daily, catalog, date)) {
+      if (ex && !getDone(ex, daily, catalog, day)) {
         localToggle(ex);
       }
     },
-    [catalog, catalog.items, daily, date, localToggle]
+    [catalog, catalog.items, daily, day, localToggle]
   );
 
   const runLocalToggle = useCallback(
@@ -211,8 +242,16 @@ export function HomePage() {
   );
 
   const onRowToggle = (def: HabitDef) => {
+    if (isEditing) return;
     if (def.systemKey === "exercise") {
       runExerciseFlow(def);
+    } else if (needsTimeModal(def)) {
+      const done0 = getDone(def, daily, catalog, day);
+      if (done0) {
+        localToggle(def);
+      } else {
+        setTimeModalDef(def);
+      }
     } else if (def.systemKey) {
       runSystemToggle(def);
     } else {
@@ -234,6 +273,33 @@ export function HomePage() {
   return (
     <>
       <section className="habit-checkin-page" aria-label={t("nav.checkin")}>
+      <div className="habit-day-nav">
+        <button
+          type="button"
+          className="habit-day-nav__btn"
+          onClick={() => setDay((x) => addDays(x, -1))}
+          aria-label={t("home.date.prev")}
+        >
+          ‹
+        </button>
+        <input
+          className="habit-day-nav__date"
+          type="date"
+          value={d.date}
+          onChange={(e) => {
+            if (e.target.value) setDay(e.target.value);
+          }}
+          aria-label={t("home.aria.date")}
+        />
+        <button
+          type="button"
+          className="habit-day-nav__btn"
+          onClick={() => setDay((x) => addDays(x, 1))}
+          aria-label={t("home.date.next")}
+        >
+          ›
+        </button>
+      </div>
       <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>
@@ -295,19 +361,21 @@ export function HomePage() {
               <CheckinRow
                 title={def.name}
                 streak={def.streak ?? 0}
-                meta={buildMeta(def, done0, daily, t, timeLocale)}
+                meta={buildMeta(def, done0, daily, catalog, day, t, timeLocale)}
                 done={done0}
                 pointsText={text}
                 pointsClassName={cls}
                 busy={def.systemKey ? busy === bKey : false}
                 isEditing={isEditing}
                 onToggle={() => onRowToggle(def)}
+                onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
                 onDelete={() => onDeleteHabit(def)}
                 checkAria={t("home.aria.check", {
                   title: def.name,
                   state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
                 })}
                 deleteAria={t("home.aria.delete", { title: def.name })}
+                editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
               />
             </li>
           );
@@ -381,12 +449,40 @@ export function HomePage() {
       <OverlayPortal>
         <NewHabitBottomSheet
           open={newSheet}
-          onClose={() => setNewSheet(false)}
+          editingHabit={editingHabit}
+          onClose={() => {
+            setNewSheet(false);
+            setEditingHabit(null);
+          }}
           onSave={(h) => {
-            addHabit(h);
+            if (h.id) {
+              updateHabit(h.id, {
+                name: h.name,
+                completePoints: h.completePoints,
+                penalty: h.penalty,
+                schedule: h.schedule,
+                targetType: h.targetType,
+                targetTime: h.targetType === "time" ? h.targetTime : undefined,
+              });
+            } else {
+              addHabit(h);
+            }
+            setEditingHabit(null);
           }}
         />
       </OverlayPortal>
+
+      <HabitTimeCheckinModal
+        open={timeModalDef != null}
+        habit={timeModalDef}
+        dayYmd={day}
+        onClose={() => setTimeModalDef(null)}
+        onConfirm={(iso) => {
+          if (!timeModalDef || isEditing) return;
+          if (getDone(timeModalDef, daily, catalog, day)) return;
+          localToggle(timeModalDef, iso);
+        }}
+      />
 
       <ExerciseDurationModal
         open={exModal}
@@ -410,9 +506,11 @@ function CheckinRow({
   busy,
   isEditing,
   onToggle,
+  onEdit,
   onDelete,
   checkAria,
   deleteAria,
+  editAria,
 }: {
   title: string;
   streak: number;
@@ -423,9 +521,11 @@ function CheckinRow({
   busy?: boolean;
   isEditing: boolean;
   onToggle: () => void;
+  onEdit?: () => void;
   onDelete: () => void;
   checkAria: string;
   deleteAria: string;
+  editAria?: string;
 }) {
   const fireToggle = () => {
     if (busy || isEditing) return;
@@ -480,19 +580,34 @@ function CheckinRow({
       </div>
       <span className={pointsClassName}>{pointsText}</span>
       {isEditing ? (
-        <button
-          type="button"
-          className="habit-checkin-edit-overlay"
-          onClick={(e) => {
-            e.stopPropagation();
-            fireDelete();
-          }}
-          aria-label={deleteAria}
-        >
-          <span className="habit-checkin-edit-overlay__icon" aria-hidden>
-            🗑
-          </span>
-        </button>
+        <div className="habit-checkin-edit-actions" role="group" aria-label={onEdit ? editAria : deleteAria}>
+          {onEdit ? (
+            <button
+              type="button"
+              className="habit-checkin-edit-pencil"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              aria-label={editAria}
+            >
+              ✎
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="habit-checkin-edit-overlay"
+            onClick={(e) => {
+              e.stopPropagation();
+              fireDelete();
+            }}
+            aria-label={deleteAria}
+          >
+            <span className="habit-checkin-edit-overlay__icon" aria-hidden>
+              🗑
+            </span>
+          </button>
+        </div>
       ) : null}
     </div>
   );

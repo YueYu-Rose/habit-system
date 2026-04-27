@@ -87,5 +87,10 @@ create policy "user_mainline_data_delete_own"
 
 -- 如创建时尚无 auth 用户，表会在首次注册后由客户端 upsert 写入
 comment on table public.user_habit_data is 'Habit catalog + embedded check-in log (customDone) per user';
+
+-- JSON `catalog` 与「习惯/日志」扩展字段（无单独 habits/logs 表时由客户端在 items 与 recordedTimes 中维护，语义对齐）：
+--   items[].target_type 对应客户端：targetType，取值 'boolean' | 'time'（HabitDef.targetType）
+--   打卡时刻：无 systemKey 且 targetType=time 时，客户端 recordedTimes[habitId][YYYY-MM-DD] = ISO 时间戳（对 logs.recorded_time）
+--   系统入睡/起床仍使用 catalog.dayTimes[date].sleepIso / wakeIso
 comment on table public.user_reward_data is 'Reward rows JSON for redeems (promotion/personal)';
 comment on table public.user_mainline_data is 'Mainline quest loop (spendable pool, current, archived)';

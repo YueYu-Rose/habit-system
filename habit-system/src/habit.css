@@ -1773,6 +1773,196 @@ html:lang(en) .habit-tagline {
   padding: 24px 10px 14px;
 }
 
+/* 参考：下划线输入 + 天蓝主按钮 + 药丸「登录/注册」 */
+.habit-auth-page--air {
+  padding: 20px 12px 24px;
+  background: #fafafa;
+}
+
+.habit-auth-card--air {
+  max-width: 400px;
+  border-radius: 16px;
+  border: 1px solid #f0f0f0;
+  padding: 22px 20px 28px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+}
+
+.habit-auth-title--hero {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 18px;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.habit-auth-pill-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.habit-auth-pill {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #6b7280;
+  border-radius: 999px;
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.habit-auth-pill--active {
+  border-color: #7dd3fc;
+  color: #0284c7;
+  background: #f0f9ff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #7dd3fc 50%, transparent);
+}
+
+.habit-auth-stack--air {
+  gap: 0;
+}
+
+.habit-auth-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0 0 4px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.habit-auth-line {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 8px 2px 10px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background: transparent;
+  color: #111827;
+  font-family: inherit;
+  margin-bottom: 20px;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.habit-auth-line::placeholder {
+  color: #c4c4cc;
+  opacity: 1;
+}
+
+.habit-auth-line:focus {
+  outline: none;
+  border-bottom-color: #7dd3fc;
+  box-shadow: none;
+}
+
+.habit-auth-line--in-row {
+  margin-bottom: 0;
+}
+
+.habit-auth-line:-webkit-autofill,
+.habit-auth-line:-webkit-autofill:hover,
+.habit-auth-line:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  transition: background-color 5000s ease-out;
+}
+
+.habit-auth-code-row--air {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.habit-auth-code-row--air .habit-auth-code-input-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.habit-auth-send-pill {
+  flex: 0 0 auto;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  min-height: 40px;
+  line-height: 1.2;
+  touch-action: manipulation;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.habit-auth-send-pill:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.habit-auth-send-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.habit-auth-primary {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 14px 18px;
+  min-height: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 100%);
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.35);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter 0.12s, transform 0.08s;
+}
+
+.habit-auth-primary:hover:not(:disabled) {
+  filter: brightness(1.03);
+}
+
+.habit-auth-primary:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.habit-auth-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(0.2);
+}
+
+.habit-auth-card--air .habit-lang-switch {
+  border-color: #e5e7eb;
+  background: #fafafa;
+}
+
+.habit-auth-card--air .habit-lang-switch__btn--on {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+}
+
 .habit-auth-card {
   width: 100%;
   max-width: 420px;
@@ -2561,8 +2751,42 @@ html:lang(en) .habit-tagline {
   margin-bottom: 4px;
 }
 
+.habit-day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.habit-day-nav__btn {
+  width: 40px;
+  min-height: 40px;
+  border: 1px solid var(--habit-border, #e5e7eb);
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--habit-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+.habit-day-nav__date {
+  flex: 1;
+  max-width: 200px;
+  min-height: 40px;
+  font-size: 16px;
+  border: 1px solid var(--habit-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--habit-text);
+  background: #fff;
+}
+
 .habit-checkin-card--editing {
-  padding-right: 46px;
+  padding-right: 78px;
 }
 
 .habit-checkin-card--editing .habit-checkin-box,
@@ -2571,19 +2795,50 @@ html:lang(en) .habit-tagline {
   opacity: 0.88;
 }
 
-.habit-checkin-edit-overlay {
+.habit-checkin-edit-actions {
   position: absolute;
-  right: 14px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 4;
+}
+
+.habit-checkin-edit-pencil {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: color-mix(in srgb, var(--theme-primary) 80%, #6b7280);
+  touch-action: manipulation;
+}
+
+.habit-checkin-edit-pencil:hover {
+  background: var(--theme-primary-soft, #f3f4f6);
+  color: var(--theme-primary, #1f2937);
+}
+
+.habit-checkin-edit-overlay {
+  position: relative;
+  right: auto;
+  top: auto;
+  transform: none;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;

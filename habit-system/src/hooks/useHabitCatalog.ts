@@ -79,6 +79,8 @@ export function useHabitCatalog() {
           streak: Number.isFinite(def.streak) ? Math.max(0, Math.round(def.streak as number)) : 0,
           systemKey: def.systemKey,
           schedule: def.schedule ?? { type: "daily" },
+          targetType: def.targetType,
+          targetTime: def.targetTime,
         };
         const n = { ...s, items: [...s.items, row] };
         saveHabitCatalog(n);
@@ -88,10 +90,22 @@ export function useHabitCatalog() {
     []
   );
 
-  const toggleLocalHabit = useCallback(
-    (date: string, def: HabitDef, wasDone: boolean, nowDone: boolean) => {
+  const updateHabit = useCallback(
+    (id: string, patch: Partial<Pick<HabitDef, "name" | "completePoints" | "penalty" | "schedule" | "targetType" | "targetTime">>) => {
       setCatalog((s) => {
-        const n = applyLocalToggle(s, date, def.id, def, wasDone, nowDone);
+        const items = s.items.map((it) => (it.id === id ? ({ ...it, ...patch } as HabitDef) : it));
+        const n = { ...s, items };
+        saveHabitCatalog(n);
+        return n;
+      });
+    },
+    []
+  );
+
+  const toggleLocalHabit = useCallback(
+    (date: string, def: HabitDef, wasDone: boolean, nowDone: boolean, clockIso?: string | null) => {
+      setCatalog((s) => {
+        const n = applyLocalToggle(s, date, def.id, def, wasDone, nowDone, clockIso);
         saveHabitCatalog(n);
         return n;
       });
@@ -131,6 +145,7 @@ export function useHabitCatalog() {
     setItems,
     removeHabit,
     addHabit,
+    updateHabit,
     toggleLocalHabit,
     bumpHabitStreak,
     reload,

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HabitBottomSheet } from "./HabitBottomSheet";
 import { useLanguage } from "../context/LanguageContext";
-import type { HabitDef, HabitSchedule } from "../lib/habitListStorage";
+import type { HabitDef, HabitSchedule, HabitTargetType } from "../lib/habitListStorage";
 import type { TransKey } from "../locales/zh";
 
 type AddPreset = 5 | 10 | 15;
@@ -10,17 +10,49 @@ type PenaltyPreset = 0 | 5 | 10;
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSave: (def: Omit<HabitDef, "id" | "systemKey" | "streak"> & { streak?: number }) => void;
+  /** 有 id 时为编辑 */
+  onSave: (def: Omit<HabitDef, "id" | "systemKey" | "streak"> & { id?: string; streak?: number }) => void;
+  /** 非空时预填为编辑 */
+  editingHabit?: HabitDef | null;
 };
 
-export function NewHabitBottomSheet({ open, onClose, onSave }: Props) {
+export function NewHabitBottomSheet({ open, onClose, onSave, editingHabit = null }: Props) {
   const { t } = useLanguage();
   const [name, setName] = useState("");
   const [pts, setPts] = useState<AddPreset>(10);
   const [pen, setPen] = useState<PenaltyPreset>(0);
   const [freq, setFreq] = useState<"daily" | "week">("daily");
   const [weekDays, setWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [targetType, setTargetType] = useState<HabitTargetType>("boolean");
+  const [targetTime, setTargetTime] = useState("07:00");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = editingHabit;
+    if (h) {
+      setName(h.name);
+      setPts((h.completePoints as AddPreset) === 5 || h.completePoints === 10 || h.completePoints === 15 ? (h.completePoints as AddPreset) : 10);
+      setPen((h.penalty as PenaltyPreset) === 0 || h.penalty === 5 || h.penalty === 10 ? (h.penalty as PenaltyPreset) : 0);
+      if (h.schedule?.type === "weekdays" && h.schedule.days?.length) {
+        setFreq("week");
+        setWeekDays([...h.schedule.days].sort((a, b) => a - b));
+      } else {
+        setFreq("daily");
+        setWeekDays([1, 2, 3, 4, 5]);
+      }
+      setTargetType(h.targetType === "time" ? "time" : "boolean");
+      setTargetTime(h.targetTime && /^\d{2}:\d{2}$/.test(h.targetTime) ? h.targetTime : "07:00");
+    } else {
+      setName("");
+      setPts(10);
+      setPen(0);
+      setFreq("daily");
+      setWeekDays([1, 2, 3, 4, 5]);
+      setTargetType("boolean");
+      setTargetTime("07:00");
+    }
+  }, [open, editingHabit]);
 
   if (!open) return null;
 
@@ -37,19 +69,25 @@ export function NewHabitBottomSheet({ open, onClose, onSave }: Props) {
   const submit = () => {
     if (!canSave) return;
     setBusy(true);
-    onSave({ name: name.trim(), completePoints: pts, penalty: pen, schedule });
-    setName("");
-    setPts(10);
-    setPen(0);
-    setFreq("daily");
-    setWeekDays([1, 2, 3, 4, 5]);
+    const payload: Omit<HabitDef, "id" | "systemKey" | "streak"> & { id?: string; streak?: number } = {
+      name: name.trim(),
+      completePoints: pts,
+      penalty: pen,
+      schedule,
+      targetType,
+      targetTime: targetType === "time" && targetTime.trim() ? targetTime.trim() : undefined,
+    };
+    if (editingHabit?.id) payload.id = editingHabit.id;
+    onSave(payload);
     setBusy(false);
     onClose();
   };
 
+  const title = editingHabit ? t("habitNew.editTitle") : t("habitNew.title");
+
   return (
     <HabitBottomSheet
-      title={t("habitNew.title")}
+      title={title}
       titleId="habit-new-habit-title"
       onClose={onClose}
       closeButton="iconOnly"
@@ -65,6 +103,39 @@ export function NewHabitBottomSheet({ open, onClose, onSave }: Props) {
         onChange={(e) => setName(e.target.value)}
         autoComplete="off"
       />
+
+      <span className="habit-form-label">{t("habitNew.recordType")}</span>
+      <div className="habit-task-kind-row" style={{ marginBottom: 8 }}>
+        <button
+          type="button"
+          className={`habit-task-kind-pill${targetType === "boolean" ? " habit-task-kind-pill--active" : ""}`}
+          onClick={() => setTargetType("boolean")}
+        >
+          {t("habitNew.type.boolean")}
+        </button>
+        <button
+          type="button"
+          className={`habit-task-kind-pill${targetType === "time" ? " habit-task-kind-pill--active" : ""}`}
+          onClick={() => setTargetType("time")}
+        >
+          {t("habitNew.type.time")}
+        </button>
+      </div>
+      {targetType === "time" ? (
+        <>
+          <label className="habit-form-label" htmlFor="new-habit-target-t">
+            {t("habitNew.targetTime")}
+          </label>
+          <input
+            id="new-habit-target-t"
+            className="habit-input-minimal"
+            type="time"
+            value={targetTime}
+            onChange={(e) => setTargetTime(e.target.value)}
+            style={{ fontSize: 16, marginBottom: 12 }}
+          />
+        </>
+      ) : null}
 
       <span className="habit-form-label">{t("habitNew.freq")}</span>
       <div className="habit-task-kind-row" style={{ marginBottom: 8 }}>
