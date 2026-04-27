@@ -10,6 +10,7 @@ import {
 import { useHabitToast } from "./HabitToastContext";
 import { useLanguage } from "./LanguageContext";
 import {
+  appendMainlineProgressEntry,
   loadMainlineLoopState,
   newArchivedId,
   saveMainlineLoopState,
@@ -63,7 +64,7 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
         }
         const name = s.current.name.trim() || t("mainline.fallbackName");
         const a = amount;
-        const next: MainlineLoopState = {
+        const base: MainlineLoopState = {
           ...s,
           spendableDelta: s.spendableDelta + a,
           current: {
@@ -71,6 +72,12 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
             cumulativePoints: s.current.cumulativePoints + a,
           },
         };
+        const next = appendMainlineProgressEntry(base, {
+          at: new Date().toISOString(),
+          amount: a,
+          source: "quick",
+          mainlineName: name,
+        });
         saveMainlineLoopState(next);
         queueMicrotask(() => {
           toast({ title: t("mainline.toast.push", { name, a }), points: a, tone: "positive" });
@@ -158,11 +165,17 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
         const pts = p.pointsOverride != null && p.pointsOverride > 0 ? Math.round(p.pointsOverride) : 10;
         const cur = s.current;
         const name = cur.name.trim() || t("mainline.externalPush");
-        const next: MainlineLoopState = {
+        const base: MainlineLoopState = {
           ...s,
           spendableDelta: s.spendableDelta + pts,
           current: { ...cur, cumulativePoints: cur.cumulativePoints + pts },
         };
+        const next = appendMainlineProgressEntry(base, {
+          at: new Date().toISOString(),
+          amount: pts,
+          source: "external",
+          mainlineName: name,
+        });
         saveMainlineLoopState(next);
         queueMicrotask(() => {
           toast({

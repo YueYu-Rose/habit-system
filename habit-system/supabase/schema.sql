@@ -19,10 +19,10 @@ create table if not exists public.user_reward_data (
   updated_at timestamptz not null default now()
 );
 
--- 3) 用户主线/可用分池（与 MainlineLoopState 一致）
+-- 3) 用户主线/可用分池（与 MainlineLoopState 一致；含内嵌 progressHistory 作「成长足迹」，无独立 logs 表时由此同步）
 create table if not exists public.user_mainline_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  state jsonb not null default '{"version":1,"spendableDelta":0,"current":null,"archived":[]}'::jsonb,
+  state jsonb not null default '{"version":1,"spendableDelta":0,"current":null,"archived":[],"progressHistory":[]}'::jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -93,4 +93,4 @@ comment on table public.user_habit_data is 'Habit catalog + embedded check-in lo
 --   打卡时刻：无 systemKey 且 targetType=time 时，客户端 recordedTimes[habitId][YYYY-MM-DD] = ISO 时间戳（对 logs.recorded_time）
 --   系统入睡/起床仍使用 catalog.dayTimes[date].sleepIso / wakeIso
 comment on table public.user_reward_data is 'Reward rows JSON for redeems (promotion/personal)';
-comment on table public.user_mainline_data is 'Mainline quest loop (spendable pool, current, archived)';
+comment on table public.user_mainline_data is 'Mainline quest loop: spendable pool, current, archived, progressHistory (injected +points trail)';

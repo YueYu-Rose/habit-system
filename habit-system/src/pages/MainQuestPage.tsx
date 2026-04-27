@@ -1,3 +1,4 @@
+import { MainlineProgressHistory } from "../components/MainlineProgressHistory";
 import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { MainlineTaskCard } from "../components/MainlineTaskCard";
@@ -13,6 +14,10 @@ export function MainQuestPage() {
     <>
       <p className="habit-muted habit-page-lead">{t("main.lead")}</p>
       <MainlineTaskCard />
+
+      <div className="habit-row-card" style={{ padding: 16, marginBottom: 12 }}>
+        <MainlineProgressHistory entries={state.progressHistory} />
+      </div>
 
       <section className="habit-mainquest-honor" aria-label="archived mainlines">
         <h2 className="habit-mainquest-honor__title">{t("main.honor.title")}</h2>

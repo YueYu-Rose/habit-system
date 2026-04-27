@@ -6,7 +6,12 @@ import {
   type HabitCatalogState,
 } from "./habitListStorage";
 import { loadRewardCatalog, REWARD_CATALOG_STORAGE_KEY, type RewardCatalogItem } from "./rewardCatalogStorage";
-import { loadMainlineLoopState, MAINLINE_LOOP_STORAGE_KEY, type MainlineLoopState } from "./mainlineLoopStorage";
+import {
+  loadMainlineLoopState,
+  MAINLINE_LOOP_STORAGE_KEY,
+  mergeMainlineStateOnPull,
+  type MainlineLoopState,
+} from "./mainlineLoopStorage";
 import {
   logRemoteRowKeysDev,
   REMOTE_HABIT_COLUMNS,
@@ -103,7 +108,8 @@ export async function pullAllUserDataForUser(userId: string): Promise<void> {
   const mPayload = mRow ? (mRow as Record<string, unknown>)[REMOTE_MAINLINE_COLUMNS.payload] : undefined;
   if (mPayload && typeof mPayload === "object") {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(MAINLINE_LOOP_STORAGE_KEY, JSON.stringify(mPayload));
+      const merged = mergeMainlineStateOnPull(localM, mPayload);
+      localStorage.setItem(MAINLINE_LOOP_STORAGE_KEY, JSON.stringify(merged));
     }
   } else {
     await pushMainlineDataToRemote(userId, localM);

@@ -146,6 +146,12 @@ export const EN: Record<TransKey, string> = {
   "mainline.toast.push": "{{name}} — +{{a}} to spendable",
   "mainline.toast.syncTodo": "From to-do: {{name}} +{{pts}}",
   "mainline.externalPush": "Current quest",
+  "mainline.trace.title": "Progress trail",
+  "mainline.trace.desc": "Quick adds and external sync to your main quest, newest first.",
+  "mainline.trace.quick": "Energy for “{{name}}”",
+  "mainline.trace.external": "Sync’d task — moving “{{name}}” forward",
+  "mainline.trace.empty":
+    "A journey of a thousand miles begins with a single step. Check in, earn points, and push your first main quest.",
   "celebrate.title": "🎉 Goal complete!",
   "celebrate.part1": "You finished ",
   "celebrate.part2": " — a total of ",
