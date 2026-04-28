@@ -210,8 +210,6 @@ export const EN: Record<TransKey, string> = {
   "report.chart.refCaption": "Not enough data yet — showing a reference curve. Your real trend will replace it as you add check-ins.",
   "report.sleepTooltip.noData": "No complete sleep & wake times that day",
   "report.ledger": "Habit check-ins (30 days)",
-  "report.ledger.scope":
-    "Lists completions from your habit list only (the habit point pool). Main-quest quick adds, external to-do sync, and reward redemptions are not shown here — “available” on Home sums multiple sources.",
   "report.ledger.empty": "No habit check-ins in the last 30 days",
   "report.more": "More history",
   "report.footer": "For redemptions and daily settlement go to",

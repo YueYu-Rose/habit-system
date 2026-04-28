@@ -206,7 +206,6 @@ export const ZH = {
   "report.chart.refCaption": "打卡数据尚少，先显示参考曲线；继续打卡后将替换为你的真实趋势。",
   "report.sleepTooltip.noData": "当日无完整入睡/起床时间记录",
   "report.ledger": "习惯打卡流水（近 30 天）",
-  "report.ledger.scope": "本列表仅含打卡习惯的完成记录（计入习惯积分池）。不含主线目标「快速加分」、外部同步进主线池、以及奖励兑换扣款；与首页「可用积分」里多来源加总不是同一维度的流水。",
   "report.ledger.empty": "近 30 天暂无习惯打卡流水",
   "report.more": "更多记录",
   "report.footer": "兑换与每日结算请前往",
