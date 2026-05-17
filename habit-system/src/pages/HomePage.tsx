@@ -19,7 +19,6 @@ import {
   getPointsForHabitComplete,
 } from "../lib/habitListStorage";
 import { todayIsoLocal, addDays } from "../lib/dateLocal";
-import { sumCalendarWeekNetSoFar } from "../lib/reportSeriesFromCatalog";
 import type { TransKey } from "../locales/zh";
 
 type HabitDaily = {
@@ -120,9 +119,7 @@ function buildMeta(
     return t("home.meta.default.done");
   }
   if (def.penalty > 0) {
-    return done
-      ? t("home.meta.penalty.done")
-      : t("home.meta.penalty.undone", { pts: def.completePoints, pen: def.penalty });
+    return done ? t("home.meta.penalty.done") : t("home.meta.default.undone", { pts: def.completePoints });
   }
   return done
     ? t("home.meta.default.done")
@@ -379,18 +376,12 @@ export function HomePage() {
 
   const availableDisplay = getEffectiveAvailable(d.availablePoints) + (catalog.customWallet || 0);
 
-  const weekNetPoints = useMemo(
-    () => sumCalendarWeekNetSoFar(catalog, day),
-    [catalog, day]
-  );
-
   const systemStreak = useMemo(() => {
     let streak = 0;
     for (let i = 0; i < 365; i += 1) {
       const dIso = addDays(today, -i);
-      const hasDone = Object.values(catalog.customDone[dIso] ?? {}).some(Boolean);
       const hasHb = Boolean(getHeartbeatForDate(catalog, dIso));
-      if (!hasDone && !hasHb) break;
+      if (!hasHb) break;
       streak += 1;
     }
     return streak;
@@ -449,20 +440,9 @@ export function HomePage() {
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <div className="habit-hero-points" style={{ marginBottom: 0 }}>
-          <div>
-            <div className="habit-hero-points__label">{t("home.available")}</div>
-            <div className="habit-hero-points__value">{availableDisplay}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div className="habit-hero-points__label">{t("home.weekNet")}</div>
-            <div
-              className={`habit-hero-points__value ${weekNetPoints >= 0 ? "habit-amount-pos" : "habit-amount-neg"}`}
-            >
-              {weekNetPoints > 0 ? "+" : ""}
-              {weekNetPoints}
-            </div>
-          </div>
+        <div className="habit-hero-points habit-hero-points--promo" style={{ marginBottom: 0 }}>
+          <div className="habit-hero-points__label">{t("home.available")}</div>
+          <div className="habit-hero-points__value">{availableDisplay}</div>
         </div>
         <p className="habit-muted" style={{ margin: "6px 2px 0", fontSize: 12 }}>
           {t("home.systemStreak", { n: systemStreak })}
@@ -633,21 +613,6 @@ export function HomePage() {
       >
         {t("home.addHabit")}
       </button>
-
-      {d.deductionReminders.length > 0 ? (
-        <>
-          <h2 className="habit-section-title">{t("home.deduction")}</h2>
-          <div className="habit-card">
-            <ul className="habit-list">
-              {d.deductionReminders.map((line, i) => (
-                <li key={i} className="habit-amount-neg" style={{ fontWeight: 600 }}>
-                  {line}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      ) : null}
 
       {showExternalIntegration ? (
         <>

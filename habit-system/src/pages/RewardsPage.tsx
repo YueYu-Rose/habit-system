@@ -227,6 +227,8 @@ export function RewardsPage() {
             const effective = getEffectiveAvailable(api);
             const missing = Math.max(0, rw.cost_points - effective);
             const progress = rw.cost_points > 0 ? Math.min(100, Math.round((effective / rw.cost_points) * 100)) : 0;
+            const encouragementKey =
+              progress <= 0 ? null : progress < 60 ? "rewards.encourage.onRoad" : "rewards.encourage.keepGoing";
             return (
               <div
                 key={rw.id}
@@ -267,15 +269,23 @@ export function RewardsPage() {
                     void redeem(rw.id, rw.cost_points);
                   }}
                 >
-                  {canRedeem ? t("rewards.redeem") : t("rewards.missing", { n: missing })}
+                  {canRedeem ? t("rewards.redeem") : t("rewards.keepSaving")}
                 </button>
                 {!canRedeem ? (
-                  <div className="habit-piggy-progress" aria-label={t("rewards.progressAria", { pct: progress, n: missing })}>
-                    <div className="habit-piggy-progress__track">
-                      <div className="habit-piggy-progress__fill" style={{ width: `${progress}%` }} />
+                  <>
+                    <div className="habit-piggy-progress__summary">
+                      <span>{t("rewards.savedToGoal", { current: Math.max(0, effective), goal: rw.cost_points })}</span>
+                      {encouragementKey ? (
+                        <span className="habit-piggy-progress__tag">{t(encouragementKey)}</span>
+                      ) : null}
                     </div>
-                    <span className="habit-piggy-progress__text">{t("rewards.progressText", { pct: progress })}</span>
-                  </div>
+                    <div className="habit-piggy-progress" aria-label={t("rewards.progressAria", { pct: progress, n: missing })}>
+                      <div className="habit-piggy-progress__track">
+                        <div className="habit-piggy-progress__fill" style={{ width: `${progress}%` }} />
+                      </div>
+                      <span className="habit-piggy-progress__text">{t("rewards.progressText", { pct: progress })}</span>
+                    </div>
+                  </>
                 ) : null}
               </div>
             );
