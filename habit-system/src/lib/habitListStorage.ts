@@ -21,6 +21,8 @@ export type HabitTargetType = "boolean" | "time";
 export type HabitDef = {
   id: string;
   name: string;
+  /** 首页焦点习惯：置顶后固定显示在首屏，不进入折叠区 */
+  isPinned?: boolean;
   completePoints: number;
   penalty: number;
   /** MVP 连胜：仅按点击增减，不做跨天断签计算 */
@@ -192,10 +194,11 @@ function normalizeItem(it: HabitDef): HabitDef {
     const [hh, mm] = it.targetTime.split(":");
     targetTime = `${String(Math.min(23, Math.max(0, parseInt(hh, 10) || 0))).padStart(2, "0")}:${String(Math.min(59, Math.max(0, parseInt(mm, 10) || 0))).padStart(2, "0")}`;
   }
+  const isPinned = it.isPinned === true;
   if (schedule.type === "weekdays" && (!Array.isArray(schedule.days) || schedule.days.length === 0)) {
-    return { ...it, streak, completePoints, penalty, schedule: { type: "daily" }, targetType, targetTime };
+    return { ...it, streak, isPinned, completePoints, penalty, schedule: { type: "daily" }, targetType, targetTime };
   }
-  return { ...it, streak, completePoints, penalty, schedule, targetType, targetTime };
+  return { ...it, streak, isPinned, completePoints, penalty, schedule, targetType, targetTime };
 }
 
 function parse(raw: string | null): HabitCatalogState {

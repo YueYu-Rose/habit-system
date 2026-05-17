@@ -18,7 +18,7 @@ import {
   type HeartbeatMood,
   getPointsForHabitComplete,
 } from "../lib/habitListStorage";
-import { todayIsoLocal, formatLocaleDate, addDays } from "../lib/dateLocal";
+import { todayIsoLocal, addDays } from "../lib/dateLocal";
 import { sumCalendarWeekNetSoFar } from "../lib/reportSeriesFromCatalog";
 import type { TransKey } from "../locales/zh";
 
@@ -137,6 +137,12 @@ function daysBetweenIso(today: string, target: string): number {
   return Math.round((a - b) / 86400000);
 }
 
+function formatShortDateLabel(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return `${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}`;
+}
+
 function decayForBackfill(daysBack: number): number {
   if (daysBack <= 0) return 1;
   if (daysBack === 1) return 0.7;
@@ -171,6 +177,14 @@ function moodLabel(t: TFn, mood: HeartbeatMood): string {
   if (mood === "tired") return t("home.heartbeat.mood.tired");
   if (mood === "energized") return t("home.heartbeat.mood.energized");
   return t("home.heartbeat.mood.neutral");
+}
+
+function relativeDayLabel(t: TFn, today: string, selected: string): string {
+  const offset = daysBetweenIso(today, selected);
+  if (offset === 0) return t("home.date.today");
+  if (offset === 1) return t("home.date.yesterday");
+  if (offset === 2) return t("home.date.beforeYesterday");
+  return formatShortDateLabel(selected);
 }
 
 export function HomePage() {
@@ -263,8 +277,10 @@ export function HomePage() {
     return [...base].sort((a, b) => getPointsForHabitComplete(b) - getPointsForHabitComplete(a));
   }, [allDueHabits, overdueHiddenIds, showOverdue]);
 
-  const topHabits = visibleHabits.slice(0, 3);
-  const extraHabits = visibleHabits.slice(3);
+  const pinnedHabits = useMemo(() => visibleHabits.filter((h) => h.isPinned === true), [visibleHabits]);
+  const normalHabits = useMemo(() => visibleHabits.filter((h) => h.isPinned !== true), [visibleHabits]);
+  const topHabits = pinnedHabits;
+  const extraHabits = normalHabits;
 
   const localToggle = useCallback(
     (def: HabitDef, clockIso?: string | null) => {
@@ -357,6 +373,10 @@ export function HomePage() {
     removeHabit(def.id);
   };
 
+  const onTogglePinned = (def: HabitDef) => {
+    updateHabit(def.id, { isPinned: def.isPinned !== true });
+  };
+
   const availableDisplay = getEffectiveAvailable(d.availablePoints) + (catalog.customWallet || 0);
 
   const weekNetPoints = useMemo(
@@ -378,6 +398,7 @@ export function HomePage() {
 
   const extModeLabel =
     d.externalTodo.mode === "local" ? t("home.external.modeLocal") : d.externalTodo.mode;
+  const selectorLabel = relativeDayLabel(t, today, selectedDate);
 
   const openHeartbeatPicker = () => {
     if (hasHeartbeat) return;
@@ -407,20 +428,15 @@ export function HomePage() {
         >
           ‹
         </button>
-        <input
-          className="habit-day-nav__date"
-          type="date"
+        <button
+          type="button"
+          className="habit-day-nav__date-pill"
           aria-label={t("home.aria.date")}
-          value={selectedDate}
-          min={minBackfillDate}
-          max={today}
-          onChange={(e) => {
-            const raw = e.target.value || today;
-            if (raw < minBackfillDate) setSelectedDate(minBackfillDate);
-            else if (raw > today) setSelectedDate(today);
-            else setSelectedDate(raw);
-          }}
-        />
+          onClick={() => setSelectedDate(today)}
+          title={selectedDate !== today ? t("home.date.jumpToday") : undefined}
+        >
+          {selectorLabel}
+        </button>
         <button
           type="button"
           className="habit-day-nav__btn"
@@ -431,7 +447,6 @@ export function HomePage() {
           ›
         </button>
       </div>
-      <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>
         <div className="habit-hero-points" style={{ marginBottom: 0 }}>
@@ -505,6 +520,12 @@ export function HomePage() {
         </button>
       ) : null}
 
+      {topHabits.length === 0 ? (
+        <p className="habit-muted" style={{ margin: "6px 0 10px" }}>
+          {t("home.pin.emptyHint")}
+        </p>
+      ) : null}
+
       <ul className="habit-checkin-stack">
         {topHabits.map((def) => {
           const done0 = getDone(def, daily, catalog, day);
@@ -530,12 +551,19 @@ export function HomePage() {
                 onToggle={() => onRowToggle(def)}
                 onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
                 onDelete={() => onDeleteHabit(def)}
+                onTogglePin={() => onTogglePinned(def)}
+                isPinned={def.isPinned === true}
                 checkAria={t("home.aria.check", {
                   title: def.name,
                   state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
                 })}
                 deleteAria={t("home.aria.delete", { title: def.name })}
                 editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
+                pinAria={
+                  def.isPinned === true
+                    ? t("home.aria.unpin", { title: def.name })
+                    : t("home.aria.pin", { title: def.name })
+                }
               />
             </li>
           );
@@ -576,12 +604,19 @@ export function HomePage() {
                       onToggle={() => onRowToggle(def)}
                       onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
                       onDelete={() => onDeleteHabit(def)}
+                      onTogglePin={() => onTogglePinned(def)}
+                      isPinned={def.isPinned === true}
                       checkAria={t("home.aria.check", {
                         title: def.name,
                         state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
                       })}
                       deleteAria={t("home.aria.delete", { title: def.name })}
                       editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
+                      pinAria={
+                        def.isPinned === true
+                          ? t("home.aria.unpin", { title: def.name })
+                          : t("home.aria.pin", { title: def.name })
+                      }
                     />
                   </li>
                 );
@@ -737,9 +772,12 @@ function CheckinRow({
   onToggle,
   onEdit,
   onDelete,
+  onTogglePin,
+  isPinned,
   checkAria,
   deleteAria,
   editAria,
+  pinAria,
 }: {
   title: string;
   streak: number;
@@ -752,9 +790,12 @@ function CheckinRow({
   onToggle: () => void;
   onEdit?: () => void;
   onDelete: () => void;
+  onTogglePin: () => void;
+  isPinned: boolean;
   checkAria: string;
   deleteAria: string;
   editAria?: string;
+  pinAria: string;
 }) {
   const fireToggle = () => {
     if (busy || isEditing) return;
@@ -823,6 +864,18 @@ function CheckinRow({
               ✎
             </button>
           ) : null}
+          <button
+            type="button"
+            className={`habit-checkin-edit-pin${isPinned ? " habit-checkin-edit-pin--on" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePin();
+            }}
+            aria-label={pinAria}
+            title={pinAria}
+          >
+            {isPinned ? "★" : "☆"}
+          </button>
           <button
             type="button"
             className="habit-checkin-edit-overlay"

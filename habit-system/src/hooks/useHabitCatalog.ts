@@ -78,6 +78,7 @@ export function useHabitCatalog() {
         const row: HabitDef = {
           id,
           name: def.name,
+          isPinned: def.isPinned === true,
           completePoints: normalizeSavedCompletePoints(def.completePoints),
           penalty: def.penalty,
           streak: Number.isFinite(def.streak) ? Math.max(0, Math.round(def.streak as number)) : 0,
@@ -95,7 +96,12 @@ export function useHabitCatalog() {
   );
 
   const updateHabit = useCallback(
-    (id: string, patch: Partial<Pick<HabitDef, "name" | "completePoints" | "penalty" | "schedule" | "targetType" | "targetTime">>) => {
+    (
+      id: string,
+      patch: Partial<
+        Pick<HabitDef, "name" | "isPinned" | "completePoints" | "penalty" | "schedule" | "targetType" | "targetTime">
+      >
+    ) => {
       setCatalog((s) => {
         const nextPatch =
           patch.completePoints === undefined

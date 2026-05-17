@@ -93,6 +93,7 @@ comment on table public.user_habit_data is 'Habit catalog + embedded check-in lo
 
 -- JSON `catalog` 与「习惯/日志」扩展字段（无单独 habits/logs 表时由客户端在 JSON 中维护）：
 --   items[].target_type 对应客户端：targetType，取值 'boolean' | 'time'（HabitDef.targetType）
+--   items[].isPinned 对应客户端：isPinned，true 时为首页固定展示的重点习惯
 --   打卡时刻：无 systemKey 且 targetType=time 时，客户端 recordedTimes[habitId][YYYY-MM-DD] = ISO 时间戳（对 logs.recorded_time）
 --   系统入睡/起床仍使用 catalog.dayTimes[date].sleepIso / wakeIso
 --   V2.0 打卡衰减：customDoneMeta[date][habitId] = { backfillDays:0|1|2, decayRate:1|0.7|0.4, awardedPoints:number, recordedAtIso:string }
