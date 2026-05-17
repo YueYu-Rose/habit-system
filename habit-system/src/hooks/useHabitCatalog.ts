@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 import {
+  applyHeartbeat,
   type HabitCatalogState,
   type HabitDef,
   applyLocalToggle,
@@ -11,6 +12,7 @@ import {
   newHabitId,
   saveHabitCatalog,
   type HabitSystemKey,
+  type HeartbeatMood,
 } from "../lib/habitListStorage";
 
 type HabitDaily = {
@@ -109,15 +111,49 @@ export function useHabitCatalog() {
   );
 
   const toggleLocalHabit = useCallback(
-    (date: string, def: HabitDef, wasDone: boolean, nowDone: boolean, clockIso?: string | null) => {
+    (
+      date: string,
+      def: HabitDef,
+      wasDone: boolean,
+      nowDone: boolean,
+      clockIso?: string | null,
+      rewardPointsOverride?: number,
+      doneMeta?: {
+        backfillDays: 0 | 1 | 2;
+        decayRate: 1 | 0.7 | 0.4;
+        awardedPoints: number;
+        recordedAtIso: string;
+      }
+    ) => {
       setCatalog((s) => {
-        const n = applyLocalToggle(s, date, def.id, def, wasDone, nowDone, clockIso);
+        const n = applyLocalToggle(
+          s,
+          date,
+          def.id,
+          def,
+          wasDone,
+          nowDone,
+          clockIso,
+          rewardPointsOverride,
+          doneMeta
+        );
         saveHabitCatalog(n);
         return n;
       });
     },
     []
   );
+
+  const markHeartbeat = useCallback((date: string, mood: HeartbeatMood) => {
+    let awarded = 0;
+    setCatalog((s) => {
+      const result = applyHeartbeat(s, date, mood);
+      awarded = result.awarded;
+      saveHabitCatalog(result.next);
+      return result.next;
+    });
+    return awarded;
+  }, []);
 
   const reload = useCallback(() => {
     setCatalog(loadHabitCatalog());
@@ -137,6 +173,7 @@ export function useHabitCatalog() {
     addHabit,
     updateHabit,
     toggleLocalHabit,
+    markHeartbeat,
     reload,
   };
 }

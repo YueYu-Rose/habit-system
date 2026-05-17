@@ -224,6 +224,9 @@ export function RewardsPage() {
                 getEffectiveAvailable(api) >= rw.cost_points &&
                 (api >= rw.cost_points || spendableDelta >= rw.cost_points)
             );
+            const effective = getEffectiveAvailable(api);
+            const missing = Math.max(0, rw.cost_points - effective);
+            const progress = rw.cost_points > 0 ? Math.min(100, Math.round((effective / rw.cost_points) * 100)) : 0;
             return (
               <div
                 key={rw.id}
@@ -256,7 +259,7 @@ export function RewardsPage() {
                 </div>
                 <button
                   type="button"
-                  className="habit-btn habit-btn--force-white"
+                  className={`habit-btn habit-btn--force-white${canRedeem ? "" : " habit-btn--piggy"}`}
                   style={{ marginTop: 12 }}
                   disabled={!canRedeem}
                   onClick={() => {
@@ -264,8 +267,16 @@ export function RewardsPage() {
                     void redeem(rw.id, rw.cost_points);
                   }}
                 >
-                  {t("rewards.redeem")}
+                  {canRedeem ? t("rewards.redeem") : t("rewards.missing", { n: missing })}
                 </button>
+                {!canRedeem ? (
+                  <div className="habit-piggy-progress" aria-label={t("rewards.progressAria", { pct: progress, n: missing })}>
+                    <div className="habit-piggy-progress__track">
+                      <div className="habit-piggy-progress__fill" style={{ width: `${progress}%` }} />
+                    </div>
+                    <span className="habit-piggy-progress__text">{t("rewards.progressText", { pct: progress })}</span>
+                  </div>
+                ) : null}
               </div>
             );
           })}

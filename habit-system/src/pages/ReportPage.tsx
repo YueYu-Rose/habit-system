@@ -157,7 +157,7 @@ function ReportPointsTooltip({
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
-  const v = d.net;
+  const v = Math.max(0, d.net);
   return (
     <div
       style={{
@@ -176,7 +176,6 @@ function ReportPointsTooltip({
       <div style={{ fontSize: 12, color: "#6b7280" }}>
         {t("report.pointsTooltip")}{" "}
         <span style={{ fontWeight: 750, color: v >= 0 ? "var(--habit-emerald)" : "var(--habit-wine)" }}>
-          {v > 0 ? "+" : ""}
           {v}
         </span>
       </div>
@@ -257,6 +256,10 @@ export function ReportPage() {
     [catalogForReport, lang]
   );
   const { sleepSeries, pointsSeries, sleepUsesRefSeries, pointsUsesRefSeries } = chartDisplay;
+  const completionSeries = useMemo(
+    () => pointsSeries.map((p) => ({ ...p, completion: Math.max(0, p.net) })),
+    [pointsSeries]
+  );
 
   const chartLabelByKeyPoints = useMemo(() => buildDateLabelMap(pointsSeries), [pointsSeries]);
   const chartLabelByKeySleep = useMemo(() => buildDateLabelMap(sleepSeries), [sleepSeries]);
@@ -377,7 +380,7 @@ export function ReportPage() {
             </div>
           ) : null}
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={pointsSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+            <LineChart data={completionSeries} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
               <XAxis
                 dataKey="key"
                 tickLine={false}
@@ -387,6 +390,7 @@ export function ReportPage() {
                 tick={(p) => CustomXAxisTick(p, chartLabelByKeyPoints)}
               />
               <YAxis
+                domain={[0, "dataMax + 5"]}
                 tickLine={false}
                 axisLine={false}
                 width={36}
@@ -395,7 +399,7 @@ export function ReportPage() {
               <CartesianGrid vertical={false} stroke="#f3f4f6" strokeDasharray="3 3" />
               <Line
                 type="monotone"
-                dataKey="net"
+                dataKey="completion"
                 stroke={primary}
                 strokeWidth={3}
                 dot={{ r: 3.5, fill: primary, stroke: "#ffffff", strokeWidth: 2 }}

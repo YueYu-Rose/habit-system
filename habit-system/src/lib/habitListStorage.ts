@@ -35,6 +35,14 @@ export type HabitDef = {
 };
 
 export type HabitDayTimes = { sleepIso?: string; wakeIso?: string };
+export type HeartbeatMood = "tired" | "neutral" | "energized";
+export type HabitHeartbeat = { atIso: string; mood?: HeartbeatMood };
+export type HabitDoneMeta = {
+  backfillDays: 0 | 1 | 2;
+  decayRate: 1 | 0.7 | 0.4;
+  awardedPoints: number;
+  recordedAtIso: string;
+};
 
 /**
  * 保存/解析习惯时的「完成加分」：未填、非法值 → 10；显式 0 保留 0。
@@ -70,6 +78,7 @@ export type HabitCatalogState = {
   v: 1;
   items: HabitDef[];
   customDone: Record<string, Record<string, boolean>>;
+  customDoneMeta?: Record<string, Record<string, HabitDoneMeta>>;
   customWallet: number;
   /** 按打卡日 YYYY-MM-DD 记录入睡/起床的 ISO 时间，供复盘与睡眠区间（跨午夜：睡在前一天、起在当天） */
   dayTimes?: Record<string, HabitDayTimes>;
@@ -77,6 +86,8 @@ export type HabitCatalogState = {
    * 时间类自定义习惯：habitId → 打卡日 → 该次打卡的 ISO 时刻（对应「logs.recorded_time」语义，存于 catalog JSON）
    */
   recordedTimes?: Record<string, Record<string, string>>;
+  /** 最小心跳：日期 -> 心情 + 记录时刻 */
+  heartbeats?: Record<string, HabitHeartbeat>;
 };
 
 export const defaultHabitItemsZh: HabitDef[] = [
@@ -155,9 +166,11 @@ const empty = (): HabitCatalogState => ({
   v: 1,
   items: getDefaultHabitItems(),
   customDone: {},
+  customDoneMeta: {},
   customWallet: 0,
   dayTimes: {},
   recordedTimes: {},
+  heartbeats: {},
 });
 
 function normalizeItem(it: HabitDef): HabitDef {
@@ -191,9 +204,11 @@ function parse(raw: string | null): HabitCatalogState {
     const j = JSON.parse(raw) as HabitCatalogState;
     if (j.v !== 1 || !Array.isArray(j.items)) return empty();
     if (typeof j.customDone !== "object" || j.customDone == null) j.customDone = {};
+    if (typeof j.customDoneMeta !== "object" || j.customDoneMeta == null) j.customDoneMeta = {};
     if (typeof j.customWallet !== "number" || !Number.isFinite(j.customWallet)) j.customWallet = 0;
     if (typeof j.dayTimes !== "object" || j.dayTimes == null) j.dayTimes = {};
     if (typeof j.recordedTimes !== "object" || j.recordedTimes == null) j.recordedTimes = {};
+    if (typeof j.heartbeats !== "object" || j.heartbeats == null) j.heartbeats = {};
     if (j.items.length === 0) j.items = getDefaultHabitItems();
     j.items = j.items.map((x) => normalizeItem(x));
     return j;
@@ -252,6 +267,10 @@ export function getRecordedTimeIso(
   date: string
 ): string | undefined {
   return state.recordedTimes?.[habitId]?.[date];
+}
+
+export function getHeartbeatForDate(state: HabitCatalogState, date: string): HabitHeartbeat | undefined {
+  return state.heartbeats?.[date];
 }
 
 /**
@@ -327,6 +346,27 @@ function mergeDayTimesUnion(
   return Object.keys(out).length ? out : undefined;
 }
 
+function mergeDoneMetaUnion(
+  a: HabitCatalogState["customDoneMeta"],
+  b: HabitCatalogState["customDoneMeta"]
+): HabitCatalogState["customDoneMeta"] | undefined {
+  if (!a && !b) return undefined;
+  const dates = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+  const out: NonNullable<typeof a> = {} as NonNullable<typeof a>;
+  for (const d of dates) {
+    out[d] = { ...(a?.[d] ?? {}), ...(b?.[d] ?? {}) };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function mergeHeartbeatsUnion(
+  a: HabitCatalogState["heartbeats"],
+  b: HabitCatalogState["heartbeats"]
+): HabitCatalogState["heartbeats"] | undefined {
+  if (!a && !b) return undefined;
+  return { ...(a ?? {}), ...(b ?? {}) };
+}
+
 /**
  * 将本地与当前 state 的打卡数据做并集，避免仅 Supabase 的 state 缺 customDone/recorded 时流水与首页不一致
  */
@@ -337,8 +377,10 @@ export function mergeHabitCatalogCheckInOverlay(
   return {
     ...primary,
     customDone: mergeCustomDoneUnion(primary.customDone, fromDisk.customDone),
+    customDoneMeta: mergeDoneMetaUnion(primary.customDoneMeta, fromDisk.customDoneMeta),
     recordedTimes: mergeRecordedTimesUnion(primary.recordedTimes, fromDisk.recordedTimes),
     dayTimes: mergeDayTimesUnion(primary.dayTimes, fromDisk.dayTimes),
+    heartbeats: mergeHeartbeatsUnion(primary.heartbeats, fromDisk.heartbeats),
   };
 }
 
@@ -353,7 +395,9 @@ function applyTimeHabitCheckIn(
   def: HabitDef,
   wasDone: boolean,
   nowDone: boolean,
-  clockIso?: string | null
+  clockIso?: string | null,
+  rewardPointsOverride?: number,
+  doneMeta?: HabitDoneMeta
 ): HabitCatalogState {
   const day = { ...(state.customDone[date] ?? {}) } as Record<string, boolean>;
   if (nowDone) {
@@ -361,7 +405,7 @@ function applyTimeHabitCheckIn(
   } else {
     delete day[habitId];
   }
-  const pts = getPointsForHabitComplete(def);
+  const pts = Math.max(0, Number.isFinite(rewardPointsOverride) ? Math.round(rewardPointsOverride as number) : getPointsForHabitComplete(def));
   const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
   let w = state.customWallet || 0;
   if (!wasDone && nowDone) {
@@ -378,21 +422,28 @@ function applyTimeHabitCheckIn(
           it.id === habitId ? { ...it, streak: Math.max(0, (it.streak ?? 0) + streakDelta) } : it
         );
   const byHabit = { ...(state.recordedTimes?.[habitId] ?? {}) } as Record<string, string>;
+  const metaByDay = { ...(state.customDoneMeta?.[date] ?? {}) } as Record<string, HabitDoneMeta>;
   if (nowDone) {
     const iso = (clockIso && clockIso.length > 0 ? clockIso : new Date().toISOString());
     byHabit[date] = iso;
+    if (doneMeta) metaByDay[habitId] = doneMeta;
   } else {
     delete byHabit[date];
+    delete metaByDay[habitId];
   }
   const recordedTimes = { ...(state.recordedTimes ?? {}) } as Record<string, Record<string, string>>;
+  const customDoneMeta = { ...(state.customDoneMeta ?? {}) } as Record<string, Record<string, HabitDoneMeta>>;
   if (Object.keys(byHabit).length) recordedTimes[habitId] = byHabit;
   else delete recordedTimes[habitId];
+  if (Object.keys(metaByDay).length) customDoneMeta[date] = metaByDay;
+  else delete customDoneMeta[date];
   return {
     ...state,
     items,
     customDone: { ...state.customDone, [date]: day },
     customWallet: w,
     recordedTimes: Object.keys(recordedTimes).length ? recordedTimes : undefined,
+    customDoneMeta: Object.keys(customDoneMeta).length ? customDoneMeta : undefined,
   };
 }
 
@@ -418,10 +469,12 @@ export function applyLocalToggle(
   def: HabitDef,
   wasDone: boolean,
   nowDone: boolean,
-  clockIso?: string | null
+  clockIso?: string | null,
+  rewardPointsOverride?: number,
+  doneMeta?: HabitDoneMeta
 ): HabitCatalogState {
   if (!def.systemKey && def.targetType === "time") {
-    return applyTimeHabitCheckIn(state, date, habitId, def, wasDone, nowDone, clockIso);
+    return applyTimeHabitCheckIn(state, date, habitId, def, wasDone, nowDone, clockIso, rewardPointsOverride, doneMeta);
   }
 
   const day = { ...(state.customDone[date] ?? {}) } as Record<string, boolean>;
@@ -430,7 +483,7 @@ export function applyLocalToggle(
   } else {
     delete day[habitId];
   }
-  const pts = getPointsForHabitComplete(def);
+  const pts = Math.max(0, Number.isFinite(rewardPointsOverride) ? Math.round(rewardPointsOverride as number) : getPointsForHabitComplete(def));
   const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
   let w = state.customWallet || 0;
   if (!wasDone && nowDone) {
@@ -447,6 +500,7 @@ export function applyLocalToggle(
           it.id === habitId ? { ...it, streak: Math.max(0, (it.streak ?? 0) + streakDelta) } : it
         );
   const dayTimes = { ...(state.dayTimes ?? {}) } as Record<string, HabitDayTimes>;
+  const metaByDay = { ...(state.customDoneMeta?.[date] ?? {}) } as Record<string, HabitDoneMeta>;
   const ts = nowDone ? (clockIso && clockIso.length > 0 ? clockIso : new Date().toISOString()) : null;
   if (def.systemKey === "sleep") {
     if (nowDone && ts) {
@@ -468,6 +522,14 @@ export function applyLocalToggle(
       else delete dayTimes[date];
     }
   }
+  if (nowDone && doneMeta) {
+    metaByDay[habitId] = doneMeta;
+  } else if (!nowDone) {
+    delete metaByDay[habitId];
+  }
+  const customDoneMeta = { ...(state.customDoneMeta ?? {}) } as Record<string, Record<string, HabitDoneMeta>>;
+  if (Object.keys(metaByDay).length) customDoneMeta[date] = metaByDay;
+  else delete customDoneMeta[date];
 
   return {
     ...state,
@@ -475,6 +537,28 @@ export function applyLocalToggle(
     customDone: { ...state.customDone, [date]: day },
     customWallet: w,
     dayTimes: Object.keys(dayTimes).length > 0 ? dayTimes : undefined,
+    customDoneMeta: Object.keys(customDoneMeta).length > 0 ? customDoneMeta : undefined,
+  };
+}
+
+export function applyHeartbeat(
+  state: HabitCatalogState,
+  date: string,
+  mood: HeartbeatMood
+): { next: HabitCatalogState; awarded: number } {
+  const existing = state.heartbeats?.[date];
+  const firstTime = !existing;
+  const nextHeartbeats = {
+    ...(state.heartbeats ?? {}),
+    [date]: { atIso: new Date().toISOString(), mood },
+  };
+  return {
+    next: {
+      ...state,
+      customWallet: state.customWallet + (firstTime ? 1 : 0),
+      heartbeats: nextHeartbeats,
+    },
+    awarded: firstTime ? 1 : 0,
   };
 }
 

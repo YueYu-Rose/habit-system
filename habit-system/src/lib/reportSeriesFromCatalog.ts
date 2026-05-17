@@ -52,6 +52,32 @@ function netPointsForDate(state: HabitCatalogState, date: string): number {
   return net;
 }
 
+/** ISO 本地日所在自然周的周一（周一至周日为一周，与复盘日净分 `netPointsForDate` 一致） */
+function mondayIsoOfLocalWeek(containingIso: string): string {
+  const [y, mo, dd] = containingIso.split("-").map((x) => parseInt(x, 10));
+  if (!y || !mo || !dd) return containingIso;
+  const dt = new Date(y, mo - 1, dd);
+  const dow = dt.getDay();
+  const delta = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(y, mo - 1, dd + delta);
+  return `${mon.getFullYear()}-${pad2(mon.getMonth() + 1)}-${pad2(mon.getDate())}`;
+}
+
+/**
+ * 当周周一至今日（本地自然日、含两端）每日 `netPointsForDate` 之和，用于首页「本周净」。
+ */
+export function sumCalendarWeekNetSoFar(
+  state: HabitCatalogState,
+  todayIso: string = todayIsoLocal()
+): number {
+  const start = mondayIsoOfLocalWeek(todayIso);
+  let sum = 0;
+  for (let cur = start; cur <= todayIso; cur = addDays(cur, 1)) {
+    sum += netPointsForDate(state, cur);
+  }
+  return sum;
+}
+
 function hasCustomActivityOnDate(state: HabitCatalogState, date: string): boolean {
   const day = state.customDone[date];
   if (!day) return false;

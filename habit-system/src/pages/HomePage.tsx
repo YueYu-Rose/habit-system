@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExerciseDurationModal } from "../components/ExerciseDurationModal";
 import { HabitTimeCheckinModal } from "../components/HabitTimeCheckinModal";
 import { NewHabitBottomSheet } from "../components/NewHabitBottomSheet";
@@ -9,14 +9,17 @@ import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
 import { getDone, useHabitCatalog } from "../hooks/useHabitCatalog";
 import {
+  getHeartbeatForDate,
   getRecordedTimeIso,
   getWeekdayForIsoDate,
   isHabitDueOnWeekday,
   type HabitCatalogState,
   type HabitDef,
+  type HeartbeatMood,
   getPointsForHabitComplete,
 } from "../lib/habitListStorage";
-import { todayIsoLocal, formatLocaleDate } from "../lib/dateLocal";
+import { todayIsoLocal, formatLocaleDate, addDays } from "../lib/dateLocal";
+import { sumCalendarWeekNetSoFar } from "../lib/reportSeriesFromCatalog";
 import type { TransKey } from "../locales/zh";
 
 type HabitDaily = {
@@ -33,7 +36,6 @@ type Summary = {
   date: string;
   availablePoints: number;
   lifetimePoints: number;
-  weekNetPoints: number;
   lastNightSleepHours: number | null;
   habitDaily: HabitDaily;
   deductionReminders: string[];
@@ -46,7 +48,6 @@ function makeSummary(date: string, extRate: number | null): Summary {
     date,
     availablePoints: 0,
     lifetimePoints: 0,
-    weekNetPoints: 0,
     lastNightSleepHours: null,
     habitDaily: null,
     deductionReminders: [],
@@ -128,32 +129,65 @@ function buildMeta(
     : t("home.meta.default.undone", { pts: def.completePoints });
 }
 
-function getPointsDisplay(def: HabitDef, done: boolean, t: TFn): { text: string; cls: string } {
+function daysBetweenIso(today: string, target: string): number {
+  const [ty, tm, td] = today.split("-").map(Number);
+  const [dy, dm, dd] = target.split("-").map(Number);
+  const a = new Date(ty, tm - 1, td).getTime();
+  const b = new Date(dy, dm - 1, dd).getTime();
+  return Math.round((a - b) / 86400000);
+}
+
+function decayForBackfill(daysBack: number): number {
+  if (daysBack <= 0) return 1;
+  if (daysBack === 1) return 0.7;
+  if (daysBack === 2) return 0.4;
+  return 0;
+}
+
+function getPointsDisplay(
+  def: HabitDef,
+  done: boolean,
+  t: TFn,
+  effectivePoints: number,
+  backfillDays: number
+): { text: string; cls: string } {
   if (done) {
     return { text: t("home.points.recorded"), cls: "habit-checkin-points habit-checkin-points--recorded" };
   }
   if (def.systemKey === "exercise") {
     return { text: t("home.points.setDuration"), cls: "habit-checkin-points habit-checkin-points--pos" };
   }
-  return { text: `+${def.completePoints}`, cls: "habit-checkin-points habit-checkin-points--pos" };
+  if (backfillDays > 0) {
+    return { text: `+${effectivePoints}`, cls: "habit-checkin-points habit-checkin-points--soft" };
+  }
+  return { text: `+${effectivePoints}`, cls: "habit-checkin-points habit-checkin-points--pos" };
 }
 
 function needsTimeModal(def: HabitDef): boolean {
   return def.systemKey === "sleep" || def.systemKey === "wake" || (!def.systemKey && def.targetType === "time");
 }
 
+function moodLabel(t: TFn, mood: HeartbeatMood): string {
+  if (mood === "tired") return t("home.heartbeat.mood.tired");
+  if (mood === "energized") return t("home.heartbeat.mood.energized");
+  return t("home.heartbeat.mood.neutral");
+}
+
 export function HomePage() {
+  const today = todayIsoLocal();
+  const minBackfillDate = addDays(today, -2);
   const [ext, setExt] = useState<{ total: number; completed: number; rate: number } | null>(null);
-  const [d, setD] = useState<Summary>(() => makeSummary(todayIsoLocal(), null));
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [d, setD] = useState<Summary>(() => makeSummary(today, null));
   const day = d.date;
   const weekday = getWeekdayForIsoDate(day);
   const { mode, showExternalIntegration } = useAppConfig();
-  const isPersonal = mode === "PERSONAL";
   const { t, lang } = useLanguage();
   const timeLocale = lang === "en" ? "en-GB" : "zh-CN";
   const { toast } = useHabitToast();
   const { getEffectiveAvailable, spendableDelta } = useMainlineLoop();
-  const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, reload: reloadCatalog } = useHabitCatalog();
+  const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, markHeartbeat, reload: reloadCatalog } =
+    useHabitCatalog();
 
   const [busy] = useState<string | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
@@ -162,10 +196,13 @@ export function HomePage() {
   const [editingHabit, setEditingHabit] = useState<HabitDef | null>(null);
   const [exModal, setExModal] = useState(false);
   const [timeModalDef, setTimeModalDef] = useState<HabitDef | null>(null);
+  const [showMore, setShowMore] = useState(false);
+  const [showOverdue, setShowOverdue] = useState(false);
+  const [heartbeatPickerOpen, setHeartbeatPickerOpen] = useState(false);
 
   const buildLocalSummary = useCallback((): Summary => {
-    return makeSummary(day, ext?.rate ?? null);
-  }, [day, ext?.rate]);
+    return makeSummary(selectedDate, ext?.rate ?? null);
+  }, [selectedDate, ext?.rate]);
 
   const reload = useCallback(() => {
     setD(buildLocalSummary());
@@ -178,7 +215,11 @@ export function HomePage() {
   useEffect(() => {
     const sync = () => {
       const t = todayIsoLocal();
-      setD((prev) => (prev.date === t ? prev : { ...makeSummary(t, ext?.rate ?? null) }));
+      if (selectedDate > t || selectedDate < addDays(t, -2)) {
+        const safe = selectedDate > t ? t : addDays(t, -2);
+        setSelectedDate(safe);
+        setD({ ...makeSummary(safe, ext?.rate ?? null) });
+      }
     };
     const id = window.setInterval(sync, 60_000);
     const onVis = () => {
@@ -189,7 +230,7 @@ export function HomePage() {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [ext?.rate]);
+  }, [ext?.rate, selectedDate]);
 
   useEffect(() => {
     const h = () => reloadCatalog();
@@ -198,25 +239,59 @@ export function HomePage() {
   }, [reloadCatalog]);
 
   const daily = d?.habitDaily ?? null;
-  const visibleHabits = catalog.items.filter((h) => isHabitDueOnWeekday(h, weekday));
+  const allDueHabits = catalog.items.filter((h) => isHabitDueOnWeekday(h, weekday));
+  const backfillDays = daysBetweenIso(today, day);
+  const decayRate = decayForBackfill(backfillDays);
+
+  const heartbeat = getHeartbeatForDate(catalog, day);
+  const hasHeartbeat = Boolean(heartbeat);
+
+  const overdueHiddenIds = useMemo(() => {
+    if (day !== today) return new Set<string>();
+    const now = new Date();
+    const hmNow = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    return new Set(
+      allDueHabits
+        .filter((h) => h.targetType === "time" && h.targetTime && h.targetTime < hmNow)
+        .filter((h) => !getDone(h, daily, catalog, day))
+        .map((h) => h.id)
+    );
+  }, [allDueHabits, catalog, daily, day, today]);
+
+  const visibleHabits = useMemo(() => {
+    const base = showOverdue ? allDueHabits : allDueHabits.filter((h) => !overdueHiddenIds.has(h.id));
+    return [...base].sort((a, b) => getPointsForHabitComplete(b) - getPointsForHabitComplete(a));
+  }, [allDueHabits, overdueHiddenIds, showOverdue]);
+
+  const topHabits = visibleHabits.slice(0, 3);
+  const extraHabits = visibleHabits.slice(3);
 
   const localToggle = useCallback(
     (def: HabitDef, clockIso?: string | null) => {
       if (isEditing) return;
       const was = getDone(def, daily, catalog, day);
       const now = !was;
-      toggleLocalHabit(day, def, was, now, clockIso);
-      const pts = getPointsForHabitComplete(def);
+      const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
+      const doneMeta = now
+        ? {
+            backfillDays: Math.min(2, Math.max(0, backfillDays)) as 0 | 1 | 2,
+            decayRate: decayRate as 1 | 0.7 | 0.4,
+            awardedPoints: effectivePts,
+            recordedAtIso: new Date().toISOString(),
+          }
+        : undefined;
+      toggleLocalHabit(day, def, was, now, clockIso, effectivePts, doneMeta);
+      const pts = effectivePts;
       const pen = def.penalty > 0 ? Math.round(def.penalty) : 0;
       const after =
         was && !now ? -pts - pen : !was && now ? pts : 0;
       toast({
         title: now ? def.name : `${def.name}${t("home.undo.suffix")}`,
         points: after,
-        tone: after < 0 ? "negative" : "default",
+        tone: after < 0 ? "negative" : backfillDays > 0 ? "default" : "default",
       });
     },
-    [catalog, daily, day, t, toast, toggleLocalHabit, isEditing]
+    [catalog, daily, day, t, toast, toggleLocalHabit, isEditing, decayRate, backfillDays]
   );
 
   const runSystemToggle = useCallback(
@@ -284,16 +359,81 @@ export function HomePage() {
 
   const availableDisplay = getEffectiveAvailable(d.availablePoints) + (catalog.customWallet || 0);
 
+  const weekNetPoints = useMemo(
+    () => sumCalendarWeekNetSoFar(catalog, day),
+    [catalog, day]
+  );
+
+  const systemStreak = useMemo(() => {
+    let streak = 0;
+    for (let i = 0; i < 365; i += 1) {
+      const dIso = addDays(today, -i);
+      const hasDone = Object.values(catalog.customDone[dIso] ?? {}).some(Boolean);
+      const hasHb = Boolean(getHeartbeatForDate(catalog, dIso));
+      if (!hasDone && !hasHb) break;
+      streak += 1;
+    }
+    return streak;
+  }, [catalog, today]);
+
   const extModeLabel =
     d.externalTodo.mode === "local" ? t("home.external.modeLocal") : d.externalTodo.mode;
+
+  const openHeartbeatPicker = () => {
+    if (hasHeartbeat) return;
+    setHeartbeatPickerOpen(true);
+  };
+
+  const chooseHeartbeatMood = (mood: HeartbeatMood) => {
+    const awarded = markHeartbeat(day, mood);
+    setHeartbeatPickerOpen(false);
+    toast({
+      title: t("home.heartbeat.recorded", { mood: moodLabel(t, mood) }),
+      points: awarded,
+      tone: awarded > 0 ? "positive" : "default",
+    });
+  };
 
   return (
     <>
       <section className="habit-checkin-page" aria-label={t("nav.checkin")}>
+      <div className="habit-day-nav">
+        <button
+          type="button"
+          className="habit-day-nav__btn"
+          aria-label={t("home.date.prev")}
+          onClick={() => setSelectedDate((v) => addDays(v, -1))}
+          disabled={selectedDate <= minBackfillDate}
+        >
+          ‹
+        </button>
+        <input
+          className="habit-day-nav__date"
+          type="date"
+          aria-label={t("home.aria.date")}
+          value={selectedDate}
+          min={minBackfillDate}
+          max={today}
+          onChange={(e) => {
+            const raw = e.target.value || today;
+            if (raw < minBackfillDate) setSelectedDate(minBackfillDate);
+            else if (raw > today) setSelectedDate(today);
+            else setSelectedDate(raw);
+          }}
+        />
+        <button
+          type="button"
+          className="habit-day-nav__btn"
+          aria-label={t("home.date.next")}
+          disabled={selectedDate >= today}
+          onClick={() => setSelectedDate((v) => (v >= today ? v : addDays(v, 1)))}
+        >
+          ›
+        </button>
+      </div>
       <p className="habit-muted habit-page-lead">{formatLocaleDate(d.date, lang)}</p>
 
       <div style={{ marginBottom: 14 }}>
-        {isPersonal ? (
         <div className="habit-hero-points" style={{ marginBottom: 0 }}>
           <div>
             <div className="habit-hero-points__label">{t("home.available")}</div>
@@ -302,21 +442,16 @@ export function HomePage() {
           <div style={{ textAlign: "right" }}>
             <div className="habit-hero-points__label">{t("home.weekNet")}</div>
             <div
-              className={`habit-hero-points__value ${d.weekNetPoints >= 0 ? "habit-amount-pos" : "habit-amount-neg"}`}
+              className={`habit-hero-points__value ${weekNetPoints >= 0 ? "habit-amount-pos" : "habit-amount-neg"}`}
             >
-              {d.weekNetPoints > 0 ? "+" : ""}
-              {d.weekNetPoints}
+              {weekNetPoints > 0 ? "+" : ""}
+              {weekNetPoints}
             </div>
           </div>
         </div>
-        ) : (
-          <div className="habit-hero-points habit-hero-points--promo" style={{ marginBottom: 0 }}>
-            <div>
-              <div className="habit-hero-points__label">{t("home.available")}</div>
-              <div className="habit-hero-points__value">{availableDisplay}</div>
-            </div>
-          </div>
-        )}
+        <p className="habit-muted" style={{ margin: "6px 2px 0", fontSize: 12 }}>
+          {t("home.systemStreak", { n: systemStreak })}
+        </p>
         {mode === "PERSONAL" &&
         showExternalIntegration &&
         (spendableDelta > 0 || (catalog.customWallet || 0) > 0) ? (
@@ -340,10 +475,41 @@ export function HomePage() {
         </button>
       </div>
 
+      <div className="habit-row-card habit-heartbeat-card">
+        <div className="habit-heartbeat-card__copy">
+          <strong>{t("home.heartbeat.title")}</strong>
+          <span className="habit-checkin-meta">
+            {hasHeartbeat
+              ? t("home.heartbeat.done", { mood: moodLabel(t, heartbeat?.mood ?? "neutral") })
+              : t("home.heartbeat.hint")}
+          </span>
+        </div>
+        <button
+          type="button"
+          className={`habit-btn habit-btn--heartbeat ${hasHeartbeat ? "habit-btn--heartbeat-done" : ""}`}
+          onClick={openHeartbeatPicker}
+          disabled={hasHeartbeat}
+        >
+          {hasHeartbeat ? t("home.heartbeat.doneShort") : t("home.heartbeat.cta")}
+        </button>
+      </div>
+
+      {overdueHiddenIds.size > 0 && !showOverdue ? (
+        <button
+          type="button"
+          className="habit-btn habit-btn--ghost"
+          style={{ marginBottom: 10 }}
+          onClick={() => setShowOverdue(true)}
+        >
+          {t("home.overdue.expand", { n: overdueHiddenIds.size })}
+        </button>
+      ) : null}
+
       <ul className="habit-checkin-stack">
-        {visibleHabits.map((def) => {
+        {topHabits.map((def) => {
           const done0 = getDone(def, daily, catalog, day);
-          const { text, cls } = getPointsDisplay(def, done0, t);
+          const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
+          const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
           const bKey = def.systemKey ?? def.id;
 
           return (
@@ -351,7 +517,11 @@ export function HomePage() {
               <CheckinRow
                 title={def.name}
                 streak={def.streak ?? 0}
-                meta={buildMeta(def, done0, daily, catalog, day, t, timeLocale)}
+                meta={
+                  done0 || backfillDays <= 0
+                    ? buildMeta(def, done0, daily, catalog, day, t, timeLocale)
+                    : t("home.backfill.softHint")
+                }
                 done={done0}
                 pointsText={text}
                 pointsClassName={cls}
@@ -371,6 +541,55 @@ export function HomePage() {
           );
         })}
       </ul>
+
+      {extraHabits.length > 0 ? (
+        <div className="habit-more-wrap">
+          <button
+            type="button"
+            className="habit-btn habit-btn--ghost"
+            onClick={() => setShowMore((v) => !v)}
+          >
+            {showMore ? t("home.more.collapse") : t("home.more.expand", { n: extraHabits.length })}
+          </button>
+          {showMore ? (
+            <ul className="habit-checkin-stack" style={{ marginTop: 10 }}>
+              {extraHabits.map((def) => {
+                const done0 = getDone(def, daily, catalog, day);
+                const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
+                const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
+                const bKey = def.systemKey ?? def.id;
+                return (
+                  <li key={def.id} className="habit-dailylog-wrap">
+                    <CheckinRow
+                      title={def.name}
+                      streak={def.streak ?? 0}
+                      meta={
+                        done0 || backfillDays <= 0
+                          ? buildMeta(def, done0, daily, catalog, day, t, timeLocale)
+                          : t("home.backfill.softHint")
+                      }
+                      done={done0}
+                      pointsText={text}
+                      pointsClassName={cls}
+                      busy={def.systemKey ? busy === bKey : false}
+                      isEditing={isEditing}
+                      onToggle={() => onRowToggle(def)}
+                      onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
+                      onDelete={() => onDeleteHabit(def)}
+                      checkAria={t("home.aria.check", {
+                        title: def.name,
+                        state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
+                      })}
+                      deleteAria={t("home.aria.delete", { title: def.name })}
+                      editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -482,6 +701,26 @@ export function HomePage() {
           confirmExerciseMinutes(m);
         }}
       />
+
+      {heartbeatPickerOpen ? (
+        <div className="habit-modal-backdrop" onClick={() => setHeartbeatPickerOpen(false)}>
+          <div className="habit-modal-card--celebrate" onClick={(e) => e.stopPropagation()}>
+            <h3 className="habit-modal-title">{t("home.heartbeat.pickerTitle")}</h3>
+            <p className="habit-modal-body">{t("home.heartbeat.pickerLead")}</p>
+            <div className="habit-duration-pills" style={{ justifyContent: "center", marginTop: 12 }}>
+              <button type="button" className="habit-duration-pill" onClick={() => chooseHeartbeatMood("tired")}>
+                😴 {t("home.heartbeat.mood.tired")}
+              </button>
+              <button type="button" className="habit-duration-pill" onClick={() => chooseHeartbeatMood("neutral")}>
+                😐 {t("home.heartbeat.mood.neutral")}
+              </button>
+              <button type="button" className="habit-duration-pill" onClick={() => chooseHeartbeatMood("energized")}>
+                ⚡ {t("home.heartbeat.mood.energized")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

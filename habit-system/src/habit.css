@@ -496,6 +496,12 @@ html:lang(en) .habit-tagline {
   background: #e5e7eb !important;
 }
 
+.habit-btn--piggy:disabled {
+  background: linear-gradient(90deg, #f4f4f5 0%, #e7e5e4 100%) !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb;
+}
+
 .habit-btn--secondary:disabled,
 .habit-btn--ghost:disabled {
   opacity: 0.5;
@@ -1270,23 +1276,23 @@ html:lang(en) .habit-tagline {
 
 .habit-checkin-box {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1.5px solid #e5e7eb;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--theme-primary) 30%, #d1d5db);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: transparent;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  background: transparent;
+  background: radial-gradient(circle at center, #ffffff 56%, color-mix(in srgb, var(--theme-primary) 10%, #ffffff) 57%);
   padding: 0;
   margin: 0;
   appearance: none;
   -webkit-appearance: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 /* 已完成：勾选为主题主色 */
@@ -1294,6 +1300,7 @@ html:lang(en) .habit-tagline {
   background: var(--theme-primary);
   border-color: var(--theme-primary);
   color: #ffffff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 20%, transparent);
 }
 
 .habit-checkin-title {
@@ -1359,6 +1366,72 @@ html:lang(en) .habit-tagline {
   color: #8b8b95;
   font-weight: 600;
   font-size: 0.82rem;
+}
+
+.habit-checkin-points--soft {
+  color: #8b8b95;
+  font-weight: 650;
+}
+
+.habit-heartbeat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.habit-heartbeat-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.habit-btn--heartbeat {
+  width: auto;
+  min-height: 40px;
+  margin-top: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+
+.habit-btn--heartbeat-done {
+  background: var(--theme-primary-soft);
+  color: var(--theme-accent-text);
+  box-shadow: none;
+}
+
+.habit-more-wrap {
+  margin-top: 10px;
+}
+
+.habit-piggy-progress {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-piggy-progress__track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.habit-piggy-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #cbd5e1 0%, var(--theme-primary) 100%);
+  transition: width 0.2s ease;
+}
+
+.habit-piggy-progress__text {
+  font-size: 12px;
+  color: var(--habit-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 打卡页顶部积分条：与行卡片同一视觉语言 */
