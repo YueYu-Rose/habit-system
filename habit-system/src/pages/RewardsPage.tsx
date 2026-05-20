@@ -75,6 +75,12 @@ function tierIdFromRow(r: Reward): (typeof REWARD_TIERS)[number]["id"] {
   return found?.id ?? "instant";
 }
 
+function tierIdFromLabel(label: string): (typeof REWARD_TIERS)[number]["id"] {
+  const normalized = String(label ?? "").trim().toLowerCase();
+  const found = REWARD_TIERS.find((t) => t.match.toLowerCase() === normalized || t.matchEn.toLowerCase() === normalized);
+  return found?.id ?? "instant";
+}
+
 function tierStringForLang(tierId: (typeof REWARD_TIERS)[number]["id"], lang: "zh" | "en"): string {
   const def = REWARD_TIERS.find((t) => t.id === tierId);
   if (!def) return lang === "en" ? "Instant" : "即时奖励";
@@ -120,6 +126,10 @@ export function RewardsPage() {
       window.removeEventListener(REMOTE_DATA_EVENT, h);
     };
   }, [load]);
+
+  useEffect(() => {
+    setRows(loadRewardCatalog());
+  }, [lang]);
 
   const showRedeemToast = useCallback(
     (cost: number) => {
@@ -236,7 +246,7 @@ export function RewardsPage() {
   const importAiRewards = (items: GeneratedReward[]) => {
     const clean = items
       .map((it) => ({
-        tier: String(it.tier ?? "").trim(),
+        tier: tierStringForLang(tierIdFromLabel(String(it.tier ?? "")), lang),
         title: String(it.title ?? "").trim(),
         cost_points: Math.max(5, Math.round(Number(it.points ?? 0) / 5) * 5),
       }))
@@ -252,7 +262,7 @@ export function RewardsPage() {
     }));
     persistRows([...added, ...rows]);
     closeCreateLayers();
-    toast({ title: `已导入 ${added.length} 个奖励`, points: 0 });
+    toast({ title: lang === "en" ? `Imported ${added.length} rewards` : `已导入 ${added.length} 个奖励`, points: 0 });
   };
 
   return (
@@ -552,7 +562,16 @@ function AiRewardPlannerSheet({
       return;
     }
     setRows((prev) =>
-      prev.map((row, idx) => (idx === editingIndex ? { ...row, title, points } : row))
+      prev.map((row, idx) =>
+        idx === editingIndex
+          ? {
+              ...row,
+              title,
+              points,
+              tier: tierStringForLang(tierIdFromLabel(row.tier), lang),
+            }
+          : row
+      )
     );
     setErr(null);
     cancelEdit();
@@ -666,7 +685,7 @@ function AiRewardPlannerSheet({
                         onClick={(e) => e.stopPropagation()}
                       />
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <strong style={{ fontSize: 13 }}>{item.tier}</strong>
+                        <strong style={{ fontSize: 13 }}>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong>
                         <input
                           className="habit-input-minimal habit-input-minimal--lightbg"
                           type="number"
@@ -682,14 +701,15 @@ function AiRewardPlannerSheet({
                         <button type="button" className="habit-btn" onClick={saveEdit}>
                           {copy.saveEdit}
                         </button>
-                        <button type="button" className="habit-btn--ghost" onClick={cancelEdit}>
+                        <button type="button" className="habit-btn habit-btn--ghost" onClick={cancelEdit}>
                           {copy.cancelEdit}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <>
-                      <strong>{item.tier}</strong> {item.title}（{item.points}分）
+                      <strong>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong> {item.title}
+                      {lang === "en" ? ` (${item.points} pts)` : `（${item.points}分）`}
                     </>
                   )}
                 </span>
@@ -724,7 +744,7 @@ function AiRewardPlannerSheet({
           </div>
           {err ? <p className="habit-error">{err}</p> : null}
           <div className="habit-ai-result-actions">
-            <button type="button" className="habit-btn habit-btn--force-white" onClick={() => void runGenerate()}>
+            <button type="button" className="habit-btn habit-btn--ghost" onClick={() => void runGenerate()}>
               {copy.regenerate}
             </button>
             <button type="button" className="habit-btn" onClick={importSelected}>

@@ -72,6 +72,35 @@ export function getDefaultPromoRewardRowsForLang(lang: "zh" | "en"): RewardCatal
   return (lang === "en" ? defaultPromoRewardRowsEn : defaultPromoRewardRowsZh).map((r) => ({ ...r }));
 }
 
+function isDefaultPromoCatalogShape(rows: RewardCatalogItem[]): boolean {
+  if (rows.length !== defaultPromoRewardRowsZh.length) return false;
+  return rows.every((row) => Number.isFinite(row.id) && row.id >= 1 && row.id <= defaultPromoRewardRowsZh.length);
+}
+
+function defaultRowById(lang: "zh" | "en", id: number): RewardCatalogItem | null {
+  const source = lang === "en" ? defaultPromoRewardRowsEn : defaultPromoRewardRowsZh;
+  const row = source.find((x) => x.id === id);
+  return row ? { ...row } : null;
+}
+
+function isLocalizedDefaultEntry(row: RewardCatalogItem): boolean {
+  const zh = defaultRowById("zh", row.id);
+  const en = defaultRowById("en", row.id);
+  if (!zh || !en) return false;
+  const costMatches = row.cost_points === zh.cost_points && row.cost_points === en.cost_points;
+  const textMatches =
+    (row.tier === zh.tier && row.title === zh.title) || (row.tier === en.tier && row.title === en.title);
+  return costMatches && textMatches;
+}
+
+function localizeIfDefaultCatalog(rows: RewardCatalogItem[]): RewardCatalogItem[] {
+  if (!isPromotionBuild()) return rows;
+  if (!isDefaultPromoCatalogShape(rows)) return rows;
+  if (!rows.every(isLocalizedDefaultEntry)) return rows;
+  const lang = readPromotionUiLang();
+  return getDefaultPromoRewardRowsForLang(lang);
+}
+
 export function loadRewardCatalog(): RewardCatalogItem[] {
   if (typeof localStorage === "undefined") {
     return isPromotionBuild() ? getDefaultPromoRewardRowsForLang(readPromotionUiLang()) : [];
@@ -83,7 +112,8 @@ export function loadRewardCatalog(): RewardCatalogItem[] {
     }
     const parsed = JSON.parse(raw) as RewardCatalogItem[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.map(normalizeRow).filter((x) => x.title.length > 0 && x.cost_points > 0);
+    const normalized = parsed.map(normalizeRow).filter((x) => x.title.length > 0 && x.cost_points > 0);
+    return localizeIfDefaultCatalog(normalized);
   } catch {
     return [];
   }
