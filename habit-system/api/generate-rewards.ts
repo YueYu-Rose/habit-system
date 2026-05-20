@@ -1,5 +1,3 @@
-import { generateRewardsWithLlm } from "./lib/generateRewardsLlm";
-
 type ReqLike = {
   method?: string;
   body?: unknown;
@@ -53,6 +51,7 @@ export default async function handler(req: ReqLike, res: ResLike): Promise<void>
   }
 
   try {
+    const { generateRewardsWithLlm } = await import("./lib/generateRewardsLlm");
     const rewards = await generateRewardsWithLlm(q1, q2Band, language);
     res.status(200).json({ rewards });
   } catch (e) {
