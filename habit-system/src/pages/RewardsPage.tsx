@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { habitFetch } from "../api/client";
 import { HabitBottomSheet } from "../components/HabitBottomSheet";
 import { OverlayPortal } from "../components/OverlayPortal";
 import { useHabitToast } from "../context/HabitToastContext";
@@ -9,6 +10,8 @@ import { loadRewardCatalog, nextRewardId, saveRewardCatalog, type RewardCatalogI
 import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 
 type Reward = RewardCatalogItem;
+type Q2Band = "under_20" | "20_50" | "over_50";
+type GeneratedReward = { tier: string; title: string; points: number; reason: string };
 
 const COST_CHIPS = [20, 50, 100, 500] as const;
 type CostPreset = (typeof COST_CHIPS)[number] | "custom";
@@ -57,6 +60,12 @@ const SUGGEST_PTS: Record<(typeof REWARD_TIERS)[number]["id"], number> = {
   mainline: 500,
 };
 
+const Q2_OPTIONS: Array<{ value: Q2Band; label: string }> = [
+  { value: "under_20", label: "20分以下" },
+  { value: "20_50", label: "20-50分" },
+  { value: "over_50", label: "50分以上" },
+];
+
 function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
   return r.tier === tier.match || r.tier === tier.matchEn;
 }
@@ -82,6 +91,8 @@ export function RewardsPage() {
   const [err, setErr] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Reward | null>(null);
+  const [createSelectionOpen, setCreateSelectionOpen] = useState(false);
+  const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
 
   const persistRows = useCallback((next: Reward[]) => {
     setRows(next);
@@ -143,10 +154,14 @@ export function RewardsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setSheetOpen(true);
+    setSheetOpen(false);
+    setAiPlannerOpen(false);
+    setCreateSelectionOpen(true);
   };
 
   const openEdit = (r: Reward) => {
+    setCreateSelectionOpen(false);
+    setAiPlannerOpen(false);
     setEditing(r);
     setSheetOpen(true);
   };
@@ -154,6 +169,27 @@ export function RewardsPage() {
   const closeSheet = () => {
     setSheetOpen(false);
     setEditing(null);
+  };
+
+  const closeCreateLayers = () => {
+    setCreateSelectionOpen(false);
+    setAiPlannerOpen(false);
+    setSheetOpen(false);
+    setEditing(null);
+  };
+
+  const openManualCreate = () => {
+    setCreateSelectionOpen(false);
+    setAiPlannerOpen(false);
+    setEditing(null);
+    setSheetOpen(true);
+  };
+
+  const openAiPlanner = () => {
+    setCreateSelectionOpen(false);
+    setSheetOpen(false);
+    setEditing(null);
+    setAiPlannerOpen(true);
   };
 
   const saveReward = async (payload: { title: string; cost_points: number; tier: string }) => {
@@ -196,6 +232,28 @@ export function RewardsPage() {
   };
 
   const byTier = (tier: (typeof REWARD_TIERS)[number]) => rows.filter((r) => rowInTier(r, tier));
+
+  const importAiRewards = (items: GeneratedReward[]) => {
+    const clean = items
+      .map((it) => ({
+        tier: String(it.tier ?? "").trim(),
+        title: String(it.title ?? "").trim(),
+        cost_points: Math.max(5, Math.round(Number(it.points ?? 0) / 5) * 5),
+      }))
+      .filter((it) => it.tier && it.title && Number.isFinite(it.cost_points) && it.cost_points > 0);
+    if (clean.length === 0) return;
+
+    const startId = nextRewardId(rows);
+    const added: Reward[] = clean.map((it, idx) => ({
+      id: startId + idx,
+      tier: it.tier,
+      title: it.title,
+      cost_points: it.cost_points,
+    }));
+    persistRows([...added, ...rows]);
+    closeCreateLayers();
+    toast({ title: `已导入 ${added.length} 个奖励`, points: 0 });
+  };
 
   return (
     <>
@@ -301,10 +359,16 @@ export function RewardsPage() {
       {err ? <p className="habit-error">{err}</p> : null}
 
       <OverlayPortal>
-        {!sheetOpen ? (
+        {!sheetOpen && !createSelectionOpen && !aiPlannerOpen ? (
           <button type="button" className="habit-fab" aria-label={t("rewards.fab")} onClick={openCreate}>
             +
           </button>
+        ) : null}
+        {createSelectionOpen ? (
+          <CreateModeSheet onClose={closeCreateLayers} onSelectAi={openAiPlanner} onSelectManual={openManualCreate} />
+        ) : null}
+        {aiPlannerOpen ? (
+          <AiRewardPlannerSheet onClose={closeCreateLayers} onImport={importAiRewards} />
         ) : null}
         {sheetOpen ? (
           <RewardBottomSheet
@@ -318,6 +382,182 @@ export function RewardsPage() {
         ) : null}
       </OverlayPortal>
     </>
+  );
+}
+
+function CreateModeSheet({
+  onClose,
+  onSelectAi,
+  onSelectManual,
+}: {
+  onClose: () => void;
+  onSelectAi: () => void;
+  onSelectManual: () => void;
+}) {
+  return (
+    <HabitBottomSheet
+      title="创建奖励"
+      titleId="habit-reward-create-mode-title"
+      onClose={onClose}
+      closeButton="iconOnly"
+    >
+      <div className="habit-ai-choice-grid">
+        <button type="button" className="habit-ai-choice-card habit-ai-choice-card--primary" onClick={onSelectAi}>
+          <span className="habit-ai-choice-card__badge">推荐</span>
+          <p className="habit-ai-choice-card__title">✨ 让 AI 帮我想</p>
+          <p className="habit-ai-choice-card__desc">回答两个问题，生成四档阶梯奖励并一键导入。</p>
+        </button>
+        <button type="button" className="habit-ai-choice-card" onClick={onSelectManual}>
+          <p className="habit-ai-choice-card__title">✏️ 自己新建</p>
+          <p className="habit-ai-choice-card__desc">继续使用原有手动新建表单，自定义标题、档位和积分。</p>
+        </button>
+      </div>
+    </HabitBottomSheet>
+  );
+}
+
+function AiRewardPlannerSheet({
+  onClose,
+  onImport,
+}: {
+  onClose: () => void;
+  onImport: (items: GeneratedReward[]) => void;
+}) {
+  const [step, setStep] = useState<"form" | "loading" | "result">("form");
+  const [q1, setQ1] = useState("");
+  const [q2Band, setQ2Band] = useState<Q2Band>("20_50");
+  const [err, setErr] = useState<string | null>(null);
+  const [rows, setRows] = useState<GeneratedReward[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  const runGenerate = async () => {
+    if (!q1.trim()) {
+      setErr("请先填写你最想犒劳自己的事");
+      return;
+    }
+    setErr(null);
+    setStep("loading");
+    try {
+      const data = await habitFetch<{ rewards: GeneratedReward[] }>("/api/habit/rewards/generate", {
+        method: "POST",
+        body: JSON.stringify({ q1: q1.trim(), q2Band }),
+      });
+      const list = Array.isArray(data.rewards) ? data.rewards : [];
+      setRows(list);
+      setSelected(new Set(list.map((_, i) => i)));
+      setStep("result");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      setStep("form");
+    }
+  };
+
+  const toggleRow = (idx: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const importSelected = () => {
+    const picked = rows.filter((_, i) => selected.has(i));
+    if (picked.length === 0) {
+      setErr("请至少勾选一项奖励");
+      return;
+    }
+    onImport(picked);
+  };
+
+  return (
+    <HabitBottomSheet
+      title="✨ AI 奖励规划师"
+      titleId="habit-ai-reward-planner-title"
+      onClose={onClose}
+      closeButton="iconOnly"
+    >
+      {step === "form" ? (
+        <>
+          <label className="habit-form-label" htmlFor="habit-ai-reward-q1">
+            你最近最想犒劳自己的事是什么？
+          </label>
+          <input
+            id="habit-ai-reward-q1"
+            className="habit-input-minimal"
+            placeholder="比如喝杯奶茶、打两小时游戏、买件新衣服"
+            value={q1}
+            onChange={(e) => setQ1(e.target.value)}
+            autoComplete="off"
+          />
+
+          <span className="habit-form-label" style={{ marginTop: 12, display: "inline-block" }}>
+            你现在每天大概能赚多少积分？
+          </span>
+          <div className="habit-ai-q2-list">
+            {Q2_OPTIONS.map((opt) => (
+              <label key={opt.value} className="habit-ai-q2-option">
+                <input
+                  type="radio"
+                  name="habit-ai-q2-band"
+                  checked={q2Band === opt.value}
+                  onChange={() => setQ2Band(opt.value)}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+
+          {err ? <p className="habit-error">{err}</p> : null}
+
+          <button type="button" className="habit-btn" onClick={() => void runGenerate()}>
+            生成奖励清单
+          </button>
+        </>
+      ) : null}
+
+      {step === "loading" ? (
+        <div className="habit-ai-loading-wrap" aria-live="polite">
+          <div className="habit-ai-spinner" aria-hidden />
+          <p className="habit-muted" style={{ marginTop: 10 }}>
+            正在为你定制专属奖励清单…
+          </p>
+          <div className="habit-ai-skeleton-list">
+            {[1, 2, 3, 4, 5, 6].map((x) => (
+              <div key={x} className="habit-ai-skeleton-item" />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {step === "result" ? (
+        <>
+          <p className="habit-muted" style={{ marginTop: 0 }}>
+            勾选你想导入的奖励（默认全选）
+          </p>
+          <div className="habit-ai-result-list">
+            {rows.map((item, idx) => (
+              <label key={`${item.tier}-${idx}-${item.title}`} className="habit-ai-result-item">
+                <input type="checkbox" checked={selected.has(idx)} onChange={() => toggleRow(idx)} />
+                <span>
+                  <strong>{item.tier}</strong> · {item.title}（{item.points}分）
+                  {item.reason ? <em>{item.reason}</em> : null}
+                </span>
+              </label>
+            ))}
+          </div>
+          {err ? <p className="habit-error">{err}</p> : null}
+          <div className="habit-ai-result-actions">
+            <button type="button" className="habit-btn--ghost" onClick={() => void runGenerate()}>
+              重新生成
+            </button>
+            <button type="button" className="habit-btn" onClick={importSelected}>
+              一键导入选中项
+            </button>
+          </div>
+        </>
+      ) : null}
+    </HabitBottomSheet>
   );
 }
 

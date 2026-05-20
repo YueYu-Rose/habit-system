@@ -21,6 +21,7 @@ import {
   completeCustomTask,
   penalizeCustomTask,
 } from "../services/taskCompletion.js";
+import { generateRewardsWithLlm } from "../services/generateRewardsLlm.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -156,6 +157,37 @@ export function createHabitRouter(): express.Router {
       .prepare(`SELECT id, tier, title, cost_points FROM rewards_catalog ORDER BY sort_order, id`)
       .all();
     res.json({ rows });
+  });
+
+  r.post("/rewards/generate", async (req, res) => {
+    const body = req.body as { q1?: unknown; q2Band?: unknown };
+    const q1 = String(body.q1 ?? "").trim();
+    const q2Band = String(body.q2Band ?? "").trim();
+    if (!q1) {
+      res.status(400).json({ error: "q1 不能为空" });
+      return;
+    }
+    if (!["under_20", "20_50", "over_50"].includes(q2Band)) {
+      res.status(400).json({ error: "q2Band 必须是 under_20 / 20_50 / over_50" });
+      return;
+    }
+    const llmReady = Boolean(
+      process.env.OPENAI_API_KEY?.trim() || process.env.ANTHROPIC_API_KEY?.trim()
+    );
+    if (!llmReady) {
+      res.status(503).json({
+        error: "服务器未配置 LLM 密钥",
+        hint: "请设置 OPENAI_API_KEY 或 ANTHROPIC_API_KEY",
+      });
+      return;
+    }
+    try {
+      const rewards = await generateRewardsWithLlm(q1, q2Band);
+      res.json({ rewards });
+    } catch (e) {
+      console.error("[habit/rewards/generate]", e);
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
   });
 
   r.post("/rewards", (req, res) => {

@@ -3217,3 +3217,144 @@ html:lang(en) .habit-tagline {
   margin-top: 0;
 }
 
+.habit-ai-choice-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.habit-ai-choice-card {
+  width: 100%;
+  border: 1px solid var(--habit-border);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: left;
+  background: #fff;
+  color: var(--habit-text);
+  position: relative;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.habit-ai-choice-card--primary {
+  border: 2px solid var(--theme-primary);
+  background: var(--theme-primary-soft);
+}
+
+.habit-ai-choice-card__badge {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--theme-primary);
+}
+
+.habit-ai-choice-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.habit-ai-choice-card__desc {
+  margin: 8px 0 0;
+  color: var(--habit-text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.habit-ai-q2-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habit-ai-q2-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--habit-border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
+  color: var(--habit-text);
+}
+
+.habit-ai-loading-wrap {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.habit-ai-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid color-mix(in srgb, var(--theme-primary) 30%, #d1d5db);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: habit-ai-spin 0.9s linear infinite;
+}
+
+@keyframes habit-ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.habit-ai-skeleton-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.habit-ai-skeleton-item {
+  height: 46px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: habit-ai-skeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes habit-ai-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.habit-ai-result-list {
+  display: grid;
+  gap: 8px;
+}
+
+.habit-ai-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--habit-border);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.habit-ai-result-item em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  color: var(--habit-text-secondary);
+  font-size: 0.8rem;
+}
+
+.habit-ai-result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.habit-ai-result-actions > button {
+  flex: 1;
+}
+
