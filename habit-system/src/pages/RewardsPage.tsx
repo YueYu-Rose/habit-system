@@ -456,7 +456,6 @@ function AiRewardPlannerSheet({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editPoints, setEditPoints] = useState("");
-  const [editReason, setEditReason] = useState("");
 
   const copy = {
     title: lang === "en" ? "✨ AI Reward Planner" : "✨ AI 奖励规划师",
@@ -477,7 +476,6 @@ function AiRewardPlannerSheet({
     saveEdit: lang === "en" ? "Save" : "保存",
     cancelEdit: lang === "en" ? "Cancel" : "取消",
     titlePlaceholder: lang === "en" ? "Reward title" : "奖励名称",
-    reasonPlaceholder: lang === "en" ? "Reason (optional)" : "理由（可选）",
     q1Required:
       lang === "en"
         ? "Please tell me how you'd like to treat yourself first."
@@ -537,14 +535,12 @@ function AiRewardPlannerSheet({
     setEditingIndex(idx);
     setEditTitle(row.title);
     setEditPoints(String(row.points));
-    setEditReason(row.reason ?? "");
   };
 
   const cancelEdit = () => {
     setEditingIndex(null);
     setEditTitle("");
     setEditPoints("");
-    setEditReason("");
   };
 
   const saveEdit = () => {
@@ -556,9 +552,7 @@ function AiRewardPlannerSheet({
       return;
     }
     setRows((prev) =>
-      prev.map((row, idx) =>
-        idx === editingIndex ? { ...row, title, points, reason: editReason.trim() } : row
-      )
+      prev.map((row, idx) => (idx === editingIndex ? { ...row, title, points } : row))
     );
     setErr(null);
     cancelEdit();
@@ -640,8 +634,9 @@ function AiRewardPlannerSheet({
             </p>
             <button
               type="button"
-              className="habit-btn--ghost"
-              style={{ minWidth: 84, marginTop: 0 }}
+              className="habit-dailylog-edit"
+              style={{ minWidth: 84 }}
+              aria-pressed={manageMode}
               onClick={() => {
                 setManageMode((v) => !v);
                 if (manageMode) cancelEdit();
@@ -677,13 +672,6 @@ function AiRewardPlannerSheet({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </div>
-                      <input
-                        className="habit-input-minimal habit-input-minimal--lightbg"
-                        placeholder={copy.reasonPlaceholder}
-                        value={editReason}
-                        onChange={(e) => setEditReason(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
                       <div style={{ display: "flex", gap: 8 }}>
                         <button type="button" className="habit-btn" onClick={saveEdit}>
                           {copy.saveEdit}
@@ -696,7 +684,6 @@ function AiRewardPlannerSheet({
                   ) : (
                     <>
                       <strong>{item.tier}</strong> · {item.title}（{item.points}分）
-                      {item.reason ? <em>{item.reason}</em> : null}
                     </>
                   )}
                 </span>
@@ -704,7 +691,7 @@ function AiRewardPlannerSheet({
                   <button
                     type="button"
                     className="habit-reward-edit"
-                    style={{ marginLeft: 8 }}
+                    style={{ marginLeft: 8, marginTop: 2 }}
                     aria-label={`${copy.edit} ${item.title}`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -712,7 +699,18 @@ function AiRewardPlannerSheet({
                       beginEdit(idx);
                     }}
                   >
-                    ✏️
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
                   </button>
                 ) : null}
               </label>
