@@ -133,21 +133,76 @@ async function callAnthropic(systemPrompt: string): Promise<string> {
   return text;
 }
 
+async function callDeepSeek(systemPrompt: string): Promise<string> {
+  const key = process.env.DEEPSEEK_API_KEY?.trim();
+  if (!key) throw new Error("未配置 DEEPSEEK_API_KEY");
+  const model = process.env.DEEPSEEK_REWARD_MODEL?.trim() || "deepseek-chat";
+
+  const body = {
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: JSON_CONTRACT },
+    ],
+    temperature: 0.65,
+  };
+
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`DeepSeek 请求失败(${res.status}): ${detail.slice(0, 280)}`);
+  }
+  const json = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+  };
+  const content = json.choices?.[0]?.message?.content;
+  if (!content) throw new Error("DeepSeek 返回为空");
+  return content;
+}
+
 export async function generateRewardsWithLlm(
   q1: string,
   q2Band: string,
   language: "zh" | "en"
 ): Promise<GeneratedRewardItem[]> {
   const prompt = buildSystemPrompt(q1.trim(), q2Band, language);
-  const prefer = String(process.env.LLM_PROVIDER ?? "openai").toLowerCase();
+  const prefer = String(process.env.LLM_PROVIDER ?? "").toLowerCase();
+  const hasOpenAi = Boolean(process.env.OPENAI_API_KEY?.trim());
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+  const hasDeepSeek = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
 
   let raw = "";
   try {
-    raw = prefer === "anthropic" ? await callAnthropic(prompt) : await callOpenAi(prompt);
-  } catch (err) {
-    if (prefer === "anthropic" && process.env.OPENAI_API_KEY?.trim()) {
+    if (prefer === "deepseek") {
+      raw = await callDeepSeek(prompt);
+    } else if (prefer === "anthropic") {
+      raw = await callAnthropic(prompt);
+    } else if (prefer === "openai") {
       raw = await callOpenAi(prompt);
-    } else if (prefer !== "anthropic" && process.env.ANTHROPIC_API_KEY?.trim()) {
+    } else if (hasOpenAi) {
+      raw = await callOpenAi(prompt);
+    } else if (hasDeepSeek) {
+      raw = await callDeepSeek(prompt);
+    } else {
+      raw = await callAnthropic(prompt);
+    }
+  } catch (err) {
+    if (prefer === "anthropic" && hasOpenAi) {
+      raw = await callOpenAi(prompt);
+    } else if (prefer === "openai" && hasDeepSeek) {
+      raw = await callDeepSeek(prompt);
+    } else if (prefer === "deepseek" && hasOpenAi) {
+      raw = await callOpenAi(prompt);
+    } else if ((prefer === "openai" || prefer === "deepseek") && hasAnthropic) {
+      raw = await callAnthropic(prompt);
+    } else if (prefer === "" && hasDeepSeek && hasAnthropic) {
       raw = await callAnthropic(prompt);
     } else {
       throw err;

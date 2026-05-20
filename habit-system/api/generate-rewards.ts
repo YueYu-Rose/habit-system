@@ -41,11 +41,15 @@ export default async function handler(req: ReqLike, res: ResLike): Promise<void>
     return;
   }
 
-  const llmReady = Boolean(process.env.OPENAI_API_KEY?.trim() || process.env.ANTHROPIC_API_KEY?.trim());
+  const llmReady = Boolean(
+    process.env.OPENAI_API_KEY?.trim() ||
+      process.env.ANTHROPIC_API_KEY?.trim() ||
+      process.env.DEEPSEEK_API_KEY?.trim()
+  );
   if (!llmReady) {
     res.status(503).json({
       error: "服务器未配置 LLM 密钥",
-      hint: "请设置 OPENAI_API_KEY 或 ANTHROPIC_API_KEY",
+      hint: "请设置 OPENAI_API_KEY / ANTHROPIC_API_KEY / DEEPSEEK_API_KEY 之一",
     });
     return;
   }
