@@ -1,4 +1,4 @@
-import { generateRewardsWithLlm } from "./_lib/llm/generateRewardsLlm";
+import { generateRewardsWithLlm } from "./lib/generateRewardsLlm";
 
 type ReqLike = {
   method?: string;
