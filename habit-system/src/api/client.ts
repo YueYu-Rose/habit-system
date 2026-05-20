@@ -1,7 +1,5 @@
-const BASE = import.meta.env.VITE_HABIT_API_BASE ?? "";
-
 export async function habitFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${BASE}${path}`;
+  const url = path;
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(init?.headers ?? {}),

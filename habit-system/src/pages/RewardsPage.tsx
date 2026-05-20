@@ -481,7 +481,7 @@ function AiRewardPlannerSheet({
     setErr(null);
     setStep("loading");
     try {
-      const data = await habitFetch<{ rewards: GeneratedReward[] }>("/api/habit/rewards/generate", {
+      const data = await habitFetch<{ rewards: GeneratedReward[] }>("/api/generate-rewards", {
         method: "POST",
         body: JSON.stringify({ q1: q1.trim(), q2Band, language: lang }),
       });
