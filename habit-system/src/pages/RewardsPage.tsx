@@ -590,6 +590,7 @@ function AiRewardPlannerSheet({
                   name="habit-ai-q2-band"
                   checked={q2Band === opt.value}
                   onChange={() => setQ2Band(opt.value)}
+                  style={{ accentColor: "var(--habit-emerald)" }}
                 />
                 <span>{lang === "en" ? opt.labelEn : opt.labelZh}</span>
               </label>
@@ -635,7 +636,7 @@ function AiRewardPlannerSheet({
             <button
               type="button"
               className="habit-dailylog-edit"
-              style={{ minWidth: 84 }}
+              style={{ minWidth: 84, justifyContent: "center", textAlign: "center" }}
               aria-pressed={manageMode}
               onClick={() => {
                 setManageMode((v) => !v);
@@ -648,7 +649,12 @@ function AiRewardPlannerSheet({
           <div className="habit-ai-result-list">
             {rows.map((item, idx) => (
               <label key={`${item.tier}-${idx}-${item.title}`} className="habit-ai-result-item">
-                <input type="checkbox" checked={selected.has(idx)} onChange={() => toggleRow(idx)} />
+                <input
+                  type="checkbox"
+                  checked={selected.has(idx)}
+                  onChange={() => toggleRow(idx)}
+                  style={{ accentColor: "var(--habit-emerald)" }}
+                />
                 <span>
                   {editingIndex === idx ? (
                     <div style={{ display: "grid", gap: 8, width: "100%" }}>
@@ -683,7 +689,7 @@ function AiRewardPlannerSheet({
                     </div>
                   ) : (
                     <>
-                      <strong>{item.tier}</strong> · {item.title}（{item.points}分）
+                      <strong>{item.tier}</strong> {item.title}（{item.points}分）
                     </>
                   )}
                 </span>
@@ -718,7 +724,7 @@ function AiRewardPlannerSheet({
           </div>
           {err ? <p className="habit-error">{err}</p> : null}
           <div className="habit-ai-result-actions">
-            <button type="button" className="habit-btn--ghost" onClick={() => void runGenerate()}>
+            <button type="button" className="habit-btn habit-btn--force-white" onClick={() => void runGenerate()}>
               {copy.regenerate}
             </button>
             <button type="button" className="habit-btn" onClick={importSelected}>
