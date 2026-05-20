@@ -8,7 +8,7 @@ import { MainlineTaskCard } from "../components/MainlineTaskCard";
  */
 export function MainQuestPage() {
   const { t } = useLanguage();
-  const { state } = useMainlineLoop();
+  const { state, restoreArchivedMainline } = useMainlineLoop();
 
   return (
     <>
@@ -36,6 +36,16 @@ export function MainQuestPage() {
                   <span className="habit-milestone-card__pts">{a.finalPoints}</span> {t("main.honor.ptsUnit")}
                 </div>
                 <div className="habit-milestone-card__date">{a.endedAt}</div>
+                <button
+                  type="button"
+                  className="habit-btn habit-btn--ghost"
+                  style={{ marginTop: 8 }}
+                  disabled={Boolean(state.current)}
+                  title={state.current ? t("main.honor.undoDisabled") : undefined}
+                  onClick={() => restoreArchivedMainline(a.id)}
+                >
+                  {t("main.honor.undo")}
+                </button>
               </li>
             ))
           )}

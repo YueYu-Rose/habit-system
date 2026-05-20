@@ -29,6 +29,7 @@ type MainlineLoopContextValue = {
   setCurrentName: (name: string) => void;
   startNewMainline: (name: string) => void;
   archiveAndClearCurrent: (name: string, finalPoints: number) => void;
+  restoreArchivedMainline: (archivedId: string) => void;
   trySpendFromLocalPool: (amount: number) => boolean;
   addToLocalPool: (amount: number) => void;
 };
@@ -133,6 +134,32 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const restoreArchivedMainline = useCallback(
+    (archivedId: string) => {
+      setState((s) => {
+        const archived = s.archived.find((x) => x.id === archivedId);
+        if (!archived) return s;
+        if (s.current) {
+          queueMicrotask(() => toast({ title: t("mainline.toast.restoreNeedEmpty"), tone: "negative" }));
+          return s;
+        }
+        const next: MainlineLoopState = {
+          ...s,
+          current: {
+            name: archived.name,
+            cumulativePoints: Math.max(0, Math.round(archived.finalPoints)),
+            createdAt: new Date().toISOString(),
+          },
+          archived: s.archived.filter((x) => x.id !== archivedId),
+        };
+        saveMainlineLoopState(next);
+        queueMicrotask(() => toast({ title: t("mainline.toast.restored", { name: archived.name }), tone: "positive" }));
+        return next;
+      });
+    },
+    [t, toast]
+  );
+
   const trySpendFromLocalPool = useCallback((amount: number) => {
     const need = Math.max(0, Math.round(amount));
     if (need <= 0) return true;
@@ -204,10 +231,11 @@ export function MainlineLoopProvider({ children }: { children: ReactNode }) {
       setCurrentName,
       startNewMainline,
       archiveAndClearCurrent,
+      restoreArchivedMainline,
       trySpendFromLocalPool,
       addToLocalPool,
     }),
-    [state, getEffectiveAvailable, addQuickPoints, setCurrentName, startNewMainline, archiveAndClearCurrent, trySpendFromLocalPool, addToLocalPool]
+    [state, getEffectiveAvailable, addQuickPoints, setCurrentName, startNewMainline, archiveAndClearCurrent, restoreArchivedMainline, trySpendFromLocalPool, addToLocalPool]
   );
 
   return <MainlineLoopContext.Provider value={value}>{children}</MainlineLoopContext.Provider>;
