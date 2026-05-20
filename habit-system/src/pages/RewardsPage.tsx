@@ -452,6 +452,11 @@ function AiRewardPlannerSheet({
   const [err, setErr] = useState<string | null>(null);
   const [rows, setRows] = useState<GeneratedReward[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [manageMode, setManageMode] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPoints, setEditPoints] = useState("");
+  const [editReason, setEditReason] = useState("");
 
   const copy = {
     title: lang === "en" ? "✨ AI Reward Planner" : "✨ AI 奖励规划师",
@@ -466,11 +471,22 @@ function AiRewardPlannerSheet({
     pickHint: lang === "en" ? "Pick rewards to import (all selected by default)" : "勾选你想导入的奖励（默认全选）",
     regenerate: lang === "en" ? "Regenerate" : "重新生成",
     importSelected: lang === "en" ? "Import Selected" : "一键导入选中项",
+    manage: lang === "en" ? "Manage" : "管理",
+    done: lang === "en" ? "Done" : "完成",
+    edit: lang === "en" ? "Edit" : "编辑",
+    saveEdit: lang === "en" ? "Save" : "保存",
+    cancelEdit: lang === "en" ? "Cancel" : "取消",
+    titlePlaceholder: lang === "en" ? "Reward title" : "奖励名称",
+    reasonPlaceholder: lang === "en" ? "Reason (optional)" : "理由（可选）",
     q1Required:
       lang === "en"
         ? "Please tell me how you'd like to treat yourself first."
         : "请先填写你最想犒劳自己的事",
     pickRequired: lang === "en" ? "Please select at least one reward." : "请至少勾选一项奖励",
+    editInvalid:
+      lang === "en"
+        ? "Title is required and points must be a positive number."
+        : "奖励名称不能为空，积分必须是正数",
   };
 
   const runGenerate = async () => {
@@ -488,6 +504,8 @@ function AiRewardPlannerSheet({
       const list = Array.isArray(data.rewards) ? data.rewards : [];
       setRows(list);
       setSelected(new Set(list.map((_, i) => i)));
+      setManageMode(false);
+      setEditingIndex(null);
       setStep("result");
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -511,6 +529,39 @@ function AiRewardPlannerSheet({
       return;
     }
     onImport(picked);
+  };
+
+  const beginEdit = (idx: number) => {
+    const row = rows[idx];
+    if (!row) return;
+    setEditingIndex(idx);
+    setEditTitle(row.title);
+    setEditPoints(String(row.points));
+    setEditReason(row.reason ?? "");
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+    setEditTitle("");
+    setEditPoints("");
+    setEditReason("");
+  };
+
+  const saveEdit = () => {
+    if (editingIndex == null) return;
+    const title = editTitle.trim();
+    const points = Math.max(1, Math.round(Number(editPoints)));
+    if (!title || !Number.isFinite(points)) {
+      setErr(copy.editInvalid);
+      return;
+    }
+    setRows((prev) =>
+      prev.map((row, idx) =>
+        idx === editingIndex ? { ...row, title, points, reason: editReason.trim() } : row
+      )
+    );
+    setErr(null);
+    cancelEdit();
   };
 
   return (
@@ -575,17 +626,95 @@ function AiRewardPlannerSheet({
 
       {step === "result" ? (
         <>
-          <p className="habit-muted" style={{ marginTop: 0 }}>
-            {copy.pickHint}
-          </p>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <p className="habit-muted" style={{ marginTop: 0, marginBottom: 0 }}>
+              {copy.pickHint}
+            </p>
+            <button
+              type="button"
+              className="habit-btn--ghost"
+              style={{ minWidth: 84, marginTop: 0 }}
+              onClick={() => {
+                setManageMode((v) => !v);
+                if (manageMode) cancelEdit();
+              }}
+            >
+              {manageMode ? copy.done : copy.manage}
+            </button>
+          </div>
           <div className="habit-ai-result-list">
             {rows.map((item, idx) => (
               <label key={`${item.tier}-${idx}-${item.title}`} className="habit-ai-result-item">
                 <input type="checkbox" checked={selected.has(idx)} onChange={() => toggleRow(idx)} />
                 <span>
-                  <strong>{item.tier}</strong> · {item.title}（{item.points}分）
-                  {item.reason ? <em>{item.reason}</em> : null}
+                  {editingIndex === idx ? (
+                    <div style={{ display: "grid", gap: 8, width: "100%" }}>
+                      <input
+                        className="habit-input-minimal habit-input-minimal--lightbg"
+                        placeholder={copy.titlePlaceholder}
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <strong style={{ fontSize: 13 }}>{item.tier}</strong>
+                        <input
+                          className="habit-input-minimal habit-input-minimal--lightbg"
+                          type="number"
+                          min={1}
+                          step={5}
+                          style={{ maxWidth: 120 }}
+                          value={editPoints}
+                          onChange={(e) => setEditPoints(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <input
+                        className="habit-input-minimal habit-input-minimal--lightbg"
+                        placeholder={copy.reasonPlaceholder}
+                        value={editReason}
+                        onChange={(e) => setEditReason(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" className="habit-btn" onClick={saveEdit}>
+                          {copy.saveEdit}
+                        </button>
+                        <button type="button" className="habit-btn--ghost" onClick={cancelEdit}>
+                          {copy.cancelEdit}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <strong>{item.tier}</strong> · {item.title}（{item.points}分）
+                      {item.reason ? <em>{item.reason}</em> : null}
+                    </>
+                  )}
                 </span>
+                {manageMode && editingIndex !== idx ? (
+                  <button
+                    type="button"
+                    className="habit-reward-edit"
+                    style={{ marginLeft: 8 }}
+                    aria-label={`${copy.edit} ${item.title}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      beginEdit(idx);
+                    }}
+                  >
+                    ✏️
+                  </button>
+                ) : null}
               </label>
             ))}
           </div>
