@@ -9,6 +9,10 @@ export function getHabitDbPath(): string {
   const fromEnv = process.env.HABIT_SQLITE_PATH;
   const root = path.resolve(__dirname, "..");
   if (fromEnv) return path.isAbsolute(fromEnv) ? fromEnv : path.join(root, fromEnv);
+  // Vercel Serverless filesystem is readonly except /tmp.
+  if (String(process.env.VERCEL ?? "") === "1") {
+    return "/tmp/habit.db";
+  }
   return path.join(root, "data", "habit.db");
 }
 
@@ -16,7 +20,12 @@ export function openHabitDatabase(): Database.Database {
   const dbPath = getHabitDbPath();
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
+  try {
+    db.pragma("journal_mode = WAL");
+  } catch {
+    // Some serverless filesystems can reject WAL; fallback keeps DB usable.
+    db.pragma("journal_mode = DELETE");
+  }
   db.pragma("foreign_keys = ON");
   return db;
 }
