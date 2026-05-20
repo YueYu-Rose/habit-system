@@ -160,15 +160,20 @@ export function createHabitRouter(): express.Router {
   });
 
   r.post("/rewards/generate", async (req, res) => {
-    const body = req.body as { q1?: unknown; q2Band?: unknown };
+    const body = req.body as { q1?: unknown; q2Band?: unknown; language?: unknown };
     const q1 = String(body.q1 ?? "").trim();
     const q2Band = String(body.q2Band ?? "").trim();
+    const language = String(body.language ?? "").trim().toLowerCase();
     if (!q1) {
       res.status(400).json({ error: "q1 不能为空" });
       return;
     }
     if (!["under_20", "20_50", "over_50"].includes(q2Band)) {
       res.status(400).json({ error: "q2Band 必须是 under_20 / 20_50 / over_50" });
+      return;
+    }
+    if (!["zh", "en"].includes(language)) {
+      res.status(400).json({ error: "language 必须是 zh / en" });
       return;
     }
     const llmReady = Boolean(
@@ -182,7 +187,7 @@ export function createHabitRouter(): express.Router {
       return;
     }
     try {
-      const rewards = await generateRewardsWithLlm(q1, q2Band);
+      const rewards = await generateRewardsWithLlm(q1, q2Band, language as "zh" | "en");
       res.json({ rewards });
     } catch (e) {
       console.error("[habit/rewards/generate]", e);

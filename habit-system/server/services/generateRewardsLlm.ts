@@ -13,14 +13,15 @@ const Q2_LABELS: Record<string, string> = {
   over_50: "50分以上",
 };
 
-function buildSystemPrompt(q1: string, q2Band: string): string {
+function buildSystemPrompt(q1: string, q2Band: string, language: "zh" | "en"): string {
   const q2 = Q2_LABELS[q2Band] ?? q2Band;
   return `你是一个懂行为经济学的私人成长教练。你的任务是根据用户最想做的事（${q1}）和他们每天的积分获取能力（${q2}），为他们设计一套符合『目标梯度效应』的四档奖励清单。
 规则：
 1. 即时奖励必须是今天就能实现的小事；主线兑现必须是真正让人期待的大事。
 2. 奖励名称要口语化、有画面感（例如：'瘫在沙发上刷一小时剧'，而不是'休息'）。
 3. 必须为每个奖励附带一句 10 个字以内的生成理由，帮用户理解为什么这样设置。
-4. 你必须严格输出合法的 JSON 格式，不要包含任何 Markdown 标记或多余的文字。`;
+4. 你必须严格输出合法的 JSON 格式，不要包含任何 Markdown 标记或多余的文字。
+CRITICAL INSTRUCTION: You MUST generate the JSON content (both 'title' and 'reason') strictly in the user's requested language: ${language}. For example, if the language is 'en', all titles and reasons MUST be in English. If 'zh', they MUST be in Chinese.`;
 }
 
 const JSON_CONTRACT = `你必须只输出一个 JSON 对象，结构如下：
@@ -133,8 +134,12 @@ async function callAnthropic(systemPrompt: string): Promise<string> {
   return text;
 }
 
-export async function generateRewardsWithLlm(q1: string, q2Band: string): Promise<GeneratedRewardItem[]> {
-  const prompt = buildSystemPrompt(q1.trim(), q2Band);
+export async function generateRewardsWithLlm(
+  q1: string,
+  q2Band: string,
+  language: "zh" | "en"
+): Promise<GeneratedRewardItem[]> {
+  const prompt = buildSystemPrompt(q1.trim(), q2Band, language);
   const prefer = String(process.env.LLM_PROVIDER ?? "openai").toLowerCase();
 
   let raw = "";

@@ -60,10 +60,10 @@ const SUGGEST_PTS: Record<(typeof REWARD_TIERS)[number]["id"], number> = {
   mainline: 500,
 };
 
-const Q2_OPTIONS: Array<{ value: Q2Band; label: string }> = [
-  { value: "under_20", label: "20分以下" },
-  { value: "20_50", label: "20-50分" },
-  { value: "over_50", label: "50分以上" },
+const Q2_OPTIONS: Array<{ value: Q2Band; labelZh: string; labelEn: string }> = [
+  { value: "under_20", labelZh: "20分以下", labelEn: "Below 20" },
+  { value: "20_50", labelZh: "20-50分", labelEn: "20-50" },
+  { value: "over_50", labelZh: "50分以上", labelEn: "Above 50" },
 ];
 
 function rowInTier(r: Reward, tier: (typeof REWARD_TIERS)[number]): boolean {
@@ -365,10 +365,15 @@ export function RewardsPage() {
           </button>
         ) : null}
         {createSelectionOpen ? (
-          <CreateModeSheet onClose={closeCreateLayers} onSelectAi={openAiPlanner} onSelectManual={openManualCreate} />
+          <CreateModeSheet
+            lang={lang}
+            onClose={closeCreateLayers}
+            onSelectAi={openAiPlanner}
+            onSelectManual={openManualCreate}
+          />
         ) : null}
         {aiPlannerOpen ? (
-          <AiRewardPlannerSheet onClose={closeCreateLayers} onImport={importAiRewards} />
+          <AiRewardPlannerSheet lang={lang} onClose={closeCreateLayers} onImport={importAiRewards} />
         ) : null}
         {sheetOpen ? (
           <RewardBottomSheet
@@ -386,30 +391,46 @@ export function RewardsPage() {
 }
 
 function CreateModeSheet({
+  lang,
   onClose,
   onSelectAi,
   onSelectManual,
 }: {
+  lang: "zh" | "en";
   onClose: () => void;
   onSelectAi: () => void;
   onSelectManual: () => void;
 }) {
+  const copy = {
+    title: lang === "en" ? "Create Reward" : "创建奖励",
+    badge: lang === "en" ? "Recommended" : "推荐",
+    aiTitle: lang === "en" ? "✨ Ask AI to suggest" : "✨ 让 AI 帮我想",
+    aiDesc:
+      lang === "en"
+        ? "Answer two questions and generate a 4-tier reward ladder for quick import."
+        : "回答两个问题，生成四档阶梯奖励并一键导入。",
+    manualTitle: lang === "en" ? "✏️ Create manually" : "✏️ 自己新建",
+    manualDesc:
+      lang === "en"
+        ? "Use the existing manual form to customize title, tier, and points."
+        : "继续使用原有手动新建表单，自定义标题、档位和积分。",
+  };
   return (
     <HabitBottomSheet
-      title="创建奖励"
+      title={copy.title}
       titleId="habit-reward-create-mode-title"
       onClose={onClose}
       closeButton="iconOnly"
     >
       <div className="habit-ai-choice-grid">
         <button type="button" className="habit-ai-choice-card habit-ai-choice-card--primary" onClick={onSelectAi}>
-          <span className="habit-ai-choice-card__badge">推荐</span>
-          <p className="habit-ai-choice-card__title">✨ 让 AI 帮我想</p>
-          <p className="habit-ai-choice-card__desc">回答两个问题，生成四档阶梯奖励并一键导入。</p>
+          <span className="habit-ai-choice-card__badge">{copy.badge}</span>
+          <p className="habit-ai-choice-card__title">{copy.aiTitle}</p>
+          <p className="habit-ai-choice-card__desc">{copy.aiDesc}</p>
         </button>
         <button type="button" className="habit-ai-choice-card" onClick={onSelectManual}>
-          <p className="habit-ai-choice-card__title">✏️ 自己新建</p>
-          <p className="habit-ai-choice-card__desc">继续使用原有手动新建表单，自定义标题、档位和积分。</p>
+          <p className="habit-ai-choice-card__title">{copy.manualTitle}</p>
+          <p className="habit-ai-choice-card__desc">{copy.manualDesc}</p>
         </button>
       </div>
     </HabitBottomSheet>
@@ -417,9 +438,11 @@ function CreateModeSheet({
 }
 
 function AiRewardPlannerSheet({
+  lang,
   onClose,
   onImport,
 }: {
+  lang: "zh" | "en";
   onClose: () => void;
   onImport: (items: GeneratedReward[]) => void;
 }) {
@@ -430,9 +453,29 @@ function AiRewardPlannerSheet({
   const [rows, setRows] = useState<GeneratedReward[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
+  const copy = {
+    title: lang === "en" ? "✨ AI Reward Planner" : "✨ AI 奖励规划师",
+    q1: lang === "en" ? "What's the best way to treat yourself lately?" : "你最近最想犒劳自己的事是什么？",
+    q1Placeholder:
+      lang === "en"
+        ? "For example: bubble tea, 2-hour gaming, buy new clothes"
+        : "比如喝杯奶茶、打两小时游戏、买件新衣服",
+    q2: lang === "en" ? "How many points do you earn daily?" : "你现在每天大概能赚多少积分？",
+    generate: lang === "en" ? "Generate Reward List" : "生成奖励清单",
+    loading: lang === "en" ? "Customizing your reward list..." : "正在为你定制专属奖励清单…",
+    pickHint: lang === "en" ? "Pick rewards to import (all selected by default)" : "勾选你想导入的奖励（默认全选）",
+    regenerate: lang === "en" ? "Regenerate" : "重新生成",
+    importSelected: lang === "en" ? "Import Selected" : "一键导入选中项",
+    q1Required:
+      lang === "en"
+        ? "Please tell me how you'd like to treat yourself first."
+        : "请先填写你最想犒劳自己的事",
+    pickRequired: lang === "en" ? "Please select at least one reward." : "请至少勾选一项奖励",
+  };
+
   const runGenerate = async () => {
     if (!q1.trim()) {
-      setErr("请先填写你最想犒劳自己的事");
+      setErr(copy.q1Required);
       return;
     }
     setErr(null);
@@ -440,7 +483,7 @@ function AiRewardPlannerSheet({
     try {
       const data = await habitFetch<{ rewards: GeneratedReward[] }>("/api/habit/rewards/generate", {
         method: "POST",
-        body: JSON.stringify({ q1: q1.trim(), q2Band }),
+        body: JSON.stringify({ q1: q1.trim(), q2Band, language: lang }),
       });
       const list = Array.isArray(data.rewards) ? data.rewards : [];
       setRows(list);
@@ -464,7 +507,7 @@ function AiRewardPlannerSheet({
   const importSelected = () => {
     const picked = rows.filter((_, i) => selected.has(i));
     if (picked.length === 0) {
-      setErr("请至少勾选一项奖励");
+      setErr(copy.pickRequired);
       return;
     }
     onImport(picked);
@@ -472,7 +515,7 @@ function AiRewardPlannerSheet({
 
   return (
     <HabitBottomSheet
-      title="✨ AI 奖励规划师"
+      title={copy.title}
       titleId="habit-ai-reward-planner-title"
       onClose={onClose}
       closeButton="iconOnly"
@@ -480,19 +523,19 @@ function AiRewardPlannerSheet({
       {step === "form" ? (
         <>
           <label className="habit-form-label" htmlFor="habit-ai-reward-q1">
-            你最近最想犒劳自己的事是什么？
+            {copy.q1}
           </label>
           <input
             id="habit-ai-reward-q1"
             className="habit-input-minimal"
-            placeholder="比如喝杯奶茶、打两小时游戏、买件新衣服"
+            placeholder={copy.q1Placeholder}
             value={q1}
             onChange={(e) => setQ1(e.target.value)}
             autoComplete="off"
           />
 
           <span className="habit-form-label" style={{ marginTop: 12, display: "inline-block" }}>
-            你现在每天大概能赚多少积分？
+            {copy.q2}
           </span>
           <div className="habit-ai-q2-list">
             {Q2_OPTIONS.map((opt) => (
@@ -503,7 +546,7 @@ function AiRewardPlannerSheet({
                   checked={q2Band === opt.value}
                   onChange={() => setQ2Band(opt.value)}
                 />
-                <span>{opt.label}</span>
+                <span>{lang === "en" ? opt.labelEn : opt.labelZh}</span>
               </label>
             ))}
           </div>
@@ -511,7 +554,7 @@ function AiRewardPlannerSheet({
           {err ? <p className="habit-error">{err}</p> : null}
 
           <button type="button" className="habit-btn" onClick={() => void runGenerate()}>
-            生成奖励清单
+            {copy.generate}
           </button>
         </>
       ) : null}
@@ -520,7 +563,7 @@ function AiRewardPlannerSheet({
         <div className="habit-ai-loading-wrap" aria-live="polite">
           <div className="habit-ai-spinner" aria-hidden />
           <p className="habit-muted" style={{ marginTop: 10 }}>
-            正在为你定制专属奖励清单…
+            {copy.loading}
           </p>
           <div className="habit-ai-skeleton-list">
             {[1, 2, 3, 4, 5, 6].map((x) => (
@@ -533,7 +576,7 @@ function AiRewardPlannerSheet({
       {step === "result" ? (
         <>
           <p className="habit-muted" style={{ marginTop: 0 }}>
-            勾选你想导入的奖励（默认全选）
+            {copy.pickHint}
           </p>
           <div className="habit-ai-result-list">
             {rows.map((item, idx) => (
@@ -549,10 +592,10 @@ function AiRewardPlannerSheet({
           {err ? <p className="habit-error">{err}</p> : null}
           <div className="habit-ai-result-actions">
             <button type="button" className="habit-btn--ghost" onClick={() => void runGenerate()}>
-              重新生成
+              {copy.regenerate}
             </button>
             <button type="button" className="habit-btn" onClick={importSelected}>
-              一键导入选中项
+              {copy.importSelected}
             </button>
           </div>
         </>
