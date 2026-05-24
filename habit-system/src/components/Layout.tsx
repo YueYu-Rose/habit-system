@@ -23,32 +23,30 @@ export function Layout({ children }: { children: ReactNode }) {
   ] as const;
 
   return (
-    <div className="habit-shell flex h-screen w-full bg-gray-50 overflow-hidden">
-      <nav
-        className="habit-bottom-nav fixed bottom-0 left-0 w-full flex justify-around border-t z-50 md:w-64 md:flex-col md:fixed md:left-0 md:top-0 md:h-screen md:border-r md:border-t-0 md:justify-start"
-        aria-label={t("nav.mainNav")}
-      >
-        {nav.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={`habit-nav-link${navActive(loc.pathname, item.to) ? " habit-nav-link--active" : ""}`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-
-      <main className="habit-main-content flex-1 w-full bg-gray-50 overflow-y-auto h-full pb-20 md:ml-64 md:pb-0">
-        <div className="habit-main-content__inner max-w-4xl mx-auto w-full px-6 py-8 space-y-10">
+    <div className="habit-shell">
+      <main className="habit-main-content">
+        <div className="habit-main-content__inner">
           <header className={`habit-header${mode === "PROMOTION" ? " habit-header--promotion" : ""}`}>
-            <div className="habit-header__top">
-              <div className="habit-header__intro">
-                <h1 className="habit-brand">{t("brand.title")}</h1>
-              </div>
+            <div className="habit-layout-topbar">
+              <nav className="habit-top-nav" aria-label={t("nav.mainNav")}>
+                {nav.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`habit-nav-link${navActive(loc.pathname, item.to) ? " habit-nav-link--active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
               <div className="habit-header__tools">
                 <LanguageSwitcher />
                 <HabitThemeSwitcher />
+              </div>
+            </div>
+            <div className="habit-header__top">
+              <div className="habit-header__intro">
+                <h1 className="habit-brand">{t("brand.title")}</h1>
               </div>
             </div>
           </header>
