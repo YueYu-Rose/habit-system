@@ -6,10 +6,17 @@ function resolveMode(): AppMode {
 }
 
 const mode = resolveMode();
+const hideLogin =
+  String(import.meta.env.VITE_HIDE_LOGIN ?? "")
+    .trim()
+    .toLowerCase() === "1" ||
+  String(import.meta.env.VITE_HIDE_LOGIN ?? "")
+    .trim()
+    .toLowerCase() === "true";
 
 export const appConfig = {
   mode,
-  showAuth: mode === "PROMOTION",
+  showAuth: mode === "PROMOTION" && !hideLogin,
   showAI: mode === "PERSONAL",
   showExternalIntegration: mode === "PERSONAL",
   /** 公网轻量变体可仅依赖本机存储；打卡/习惯/奖励走 LocalStorage，不强制接私有后端 */
