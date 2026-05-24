@@ -22,6 +22,10 @@ export function AuthPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
+
+  const DEMO_EMAIL = "18816280128@163.com";
+  const DEMO_PASSWORD = "123456";
 
   useEffect(() => {
     if (cooldown === 0) return;
@@ -87,7 +91,7 @@ export function AuthPage() {
   };
 
   const onLoginSubmit = async () => {
-    if (busy) return;
+    if (busy || demoBusy) return;
     setBusy(true);
     try {
       const r = await loginWithPassword(email, password);
@@ -99,6 +103,26 @@ export function AuthPage() {
       navigate("/", { replace: true });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onDemoLogin = async () => {
+    if (busy || demoBusy) return;
+    setMode("login");
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    resetRegisterFlow();
+    setDemoBusy(true);
+    try {
+      const r = await loginWithPassword(DEMO_EMAIL, DEMO_PASSWORD);
+      if (!r.ok) {
+        toast({ title: formatAuthErrorForUi(r, t), tone: "negative" });
+        return;
+      }
+      toast({ title: t("auth.toast.loginOk"), tone: "positive" });
+      navigate("/", { replace: true });
+    } finally {
+      setDemoBusy(false);
     }
   };
 
@@ -167,10 +191,21 @@ export function AuthPage() {
             <button
               type="button"
               className="habit-auth-primary"
-              disabled={busy}
+              disabled={busy || demoBusy}
               onClick={() => void onLoginSubmit()}
             >
               {t("auth.submit")}
+            </button>
+            <div className="habit-auth-divider" role="separator" aria-label="or">
+              <span>--- 或者 ---</span>
+            </div>
+            <button
+              type="button"
+              className="habit-auth-demo-btn"
+              disabled={busy || demoBusy}
+              onClick={() => void onDemoLogin()}
+            >
+              {demoBusy ? "正在进入演示系统..." : "👋 访客 / 面试官一键体验 (Demo Account)"}
             </button>
           </div>
         ) : (
