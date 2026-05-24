@@ -16,7 +16,8 @@ const hideLogin =
 
 export const appConfig = {
   mode,
-  showAuth: mode === "PROMOTION" && !hideLogin,
+  // 退出登录后（含刷新）应回到登录页；仅在显式 hideLogin 时关闭认证门禁
+  showAuth: !hideLogin,
   showAI: mode === "PERSONAL",
   showExternalIntegration: mode === "PERSONAL",
   /** 公网轻量变体可仅依赖本机存储；打卡/习惯/奖励走 LocalStorage，不强制接私有后端 */
