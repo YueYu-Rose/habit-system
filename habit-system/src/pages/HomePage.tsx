@@ -390,6 +390,11 @@ export function HomePage() {
   const extModeLabel =
     d.externalTodo.mode === "local" ? t("home.external.modeLocal") : d.externalTodo.mode;
   const selectorLabel = relativeDayLabel(t, today, selectedDate);
+  const heartbeatCta = hasHeartbeat
+    ? t("home.heartbeat.doneShort")
+    : lang === "en"
+      ? "Check in now"
+      : "立即打卡";
 
   const openHeartbeatPicker = () => {
     if (hasHeartbeat) return;
@@ -439,18 +444,18 @@ export function HomePage() {
         </button>
       </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <div className="habit-hero-points habit-hero-points--promo" style={{ marginBottom: 0 }}>
-          <div className="habit-hero-points__label">{t("home.available")}</div>
-          <div className="habit-hero-points__value">{availableDisplay}</div>
+      <div className="habit-row-card habit-overview-card">
+        <div className="habit-overview-card__main">
+          <span className="habit-overview-card__label">{t("home.available")}</span>
+          <strong className="habit-overview-card__value">{availableDisplay}</strong>
         </div>
-        <p className="habit-muted" style={{ margin: "6px 2px 0", fontSize: 12 }}>
+        <p className="habit-overview-card__sub">
           {t("home.systemStreak", { n: systemStreak })}
         </p>
         {mode === "PERSONAL" &&
         showExternalIntegration &&
         (spendableDelta > 0 || (catalog.customWallet || 0) > 0) ? (
-          <p className="habit-muted" style={{ margin: "4px 0 0", fontSize: 12, textAlign: "center" }}>
+          <p className="habit-overview-card__sub habit-overview-card__sub--muted">
             {t("home.localPoolNote", { d1: spendableDelta, d2: catalog.customWallet || 0 })}
           </p>
         ) : null}
@@ -485,80 +490,85 @@ export function HomePage() {
           onClick={openHeartbeatPicker}
           disabled={hasHeartbeat}
         >
-          {hasHeartbeat ? t("home.heartbeat.doneShort") : t("home.heartbeat.cta")}
+          {heartbeatCta}
         </button>
       </div>
 
-      {overdueHiddenIds.size > 0 && !showOverdue ? (
-        <button
-          type="button"
-          className="habit-btn habit-btn--ghost"
-          style={{ marginBottom: 10 }}
-          onClick={() => setShowOverdue(true)}
-        >
-          {t("home.overdue.expand", { n: overdueHiddenIds.size })}
-        </button>
+      {(overdueHiddenIds.size > 0 && !showOverdue) || extraHabits.length > 0 ? (
+        <div className="habit-section-actions">
+          {overdueHiddenIds.size > 0 && !showOverdue ? (
+            <button
+              type="button"
+              className="habit-section-action-btn"
+              onClick={() => setShowOverdue(true)}
+            >
+              {t("home.overdue.expand", { n: overdueHiddenIds.size })}
+            </button>
+          ) : null}
+          {extraHabits.length > 0 ? (
+            <button
+              type="button"
+              className="habit-section-action-btn"
+              onClick={() => setShowMore((v) => !v)}
+            >
+              {showMore ? t("home.more.collapse") : t("home.more.expand", { n: extraHabits.length })}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
-      {topHabits.length === 0 ? (
-        <p className="habit-muted" style={{ margin: "6px 0 10px" }}>
-          {t("home.pin.emptyHint")}
-        </p>
-      ) : null}
+      <section className="habit-task-panel">
+        {topHabits.length === 0 ? (
+          <div className="habit-empty-note">{t("home.pin.emptyHint")}</div>
+        ) : null}
 
-      <ul className="habit-checkin-stack">
-        {topHabits.map((def) => {
-          const done0 = getDone(def, daily, catalog, day);
-          const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
-          const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
-          const bKey = def.systemKey ?? def.id;
+        <ul className="habit-checkin-stack">
+          {topHabits.map((def) => {
+            const done0 = getDone(def, daily, catalog, day);
+            const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
+            const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
+            const bKey = def.systemKey ?? def.id;
 
-          return (
-            <li key={def.id} className="habit-dailylog-wrap">
-              <CheckinRow
-                title={def.name}
-                streak={def.streak ?? 0}
-                meta={
-                  done0 || backfillDays <= 0
-                    ? buildMeta(def, done0, daily, catalog, day, t, timeLocale)
-                    : t("home.backfill.softHint")
-                }
-                done={done0}
-                pointsText={text}
-                pointsClassName={cls}
-                busy={def.systemKey ? busy === bKey : false}
-                isEditing={isEditing}
-                onToggle={() => onRowToggle(def)}
-                onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
-                onDelete={() => onDeleteHabit(def)}
-                onTogglePin={() => onTogglePinned(def)}
-                isPinned={def.isPinned === true}
-                checkAria={t("home.aria.check", {
-                  title: def.name,
-                  state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
-                })}
-                deleteAria={t("home.aria.delete", { title: def.name })}
-                editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
-                pinAria={
-                  def.isPinned === true
-                    ? t("home.aria.unpin", { title: def.name })
-                    : t("home.aria.pin", { title: def.name })
-                }
-              />
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={def.id} className="habit-dailylog-wrap">
+                <CheckinRow
+                  title={def.name}
+                  streak={def.streak ?? 0}
+                  meta={
+                    done0 || backfillDays <= 0
+                      ? buildMeta(def, done0, daily, catalog, day, t, timeLocale)
+                      : t("home.backfill.softHint")
+                  }
+                  done={done0}
+                  pointsText={text}
+                  pointsClassName={cls}
+                  busy={def.systemKey ? busy === bKey : false}
+                  isEditing={isEditing}
+                  onToggle={() => onRowToggle(def)}
+                  onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
+                  onDelete={() => onDeleteHabit(def)}
+                  onTogglePin={() => onTogglePinned(def)}
+                  isPinned={def.isPinned === true}
+                  checkAria={t("home.aria.check", {
+                    title: def.name,
+                    state: done0 ? t("home.aria.state.done") : t("home.aria.state.undone"),
+                  })}
+                  deleteAria={t("home.aria.delete", { title: def.name })}
+                  editAria={!def.systemKey ? t("home.aria.editHabit", { title: def.name }) : undefined}
+                  pinAria={
+                    def.isPinned === true
+                      ? t("home.aria.unpin", { title: def.name })
+                      : t("home.aria.pin", { title: def.name })
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       {extraHabits.length > 0 ? (
-        <div className="habit-more-wrap">
-          <button
-            type="button"
-            className="habit-btn habit-btn--ghost"
-            onClick={() => setShowMore((v) => !v)}
-          >
-            {showMore ? t("home.more.collapse") : t("home.more.expand", { n: extraHabits.length })}
-          </button>
+        <div className="habit-more-wrap habit-task-panel habit-task-panel--extra">
           {showMore ? (
             <ul className="habit-checkin-stack" style={{ marginTop: 10 }}>
               {extraHabits.map((def) => {

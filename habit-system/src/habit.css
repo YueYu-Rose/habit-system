@@ -1501,6 +1501,142 @@ html:lang(en) .habit-tagline {
   font-size: 0.86rem;
 }
 
+.habit-overview-card {
+  padding: 22px 24px;
+  margin-bottom: 14px;
+}
+
+.habit-overview-card__main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.habit-overview-card__label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.habit-overview-card__value {
+  font-size: 2.4rem;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-overview-card__sub {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--habit-text-secondary);
+}
+
+.habit-overview-card__sub--muted {
+  margin-top: 6px;
+}
+
+.habit-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.habit-section-action-btn {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.habit-section-action-btn:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 45%, #d1d5db);
+  color: var(--theme-accent-text);
+  background: color-mix(in srgb, var(--theme-primary-soft) 42%, #ffffff);
+}
+
+.habit-task-panel {
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.habit-task-panel--extra {
+  padding-top: 4px;
+}
+
+.habit-empty-note {
+  margin: 2px 4px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #e5e7eb;
+  background: #fafafa;
+  color: #6b7280;
+  font-size: 0.84rem;
+}
+
+/* ==========================================================================
+ * Step 4: spacing + typography rhythm polish (Check-in)
+ * ========================================================================== */
+.habit-checkin-page .habit-day-nav {
+  margin-bottom: 12px;
+}
+
+.habit-checkin-page .habit-day-nav__btn,
+.habit-checkin-page .habit-day-nav__date-pill {
+  min-height: 42px;
+}
+
+.habit-checkin-page .habit-dailylog-head {
+  margin: 4px 0 10px;
+}
+
+.habit-checkin-page .habit-dailylog-head .habit-section-title {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.habit-checkin-page .habit-dailylog-edit {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+}
+
+.habit-checkin-page .habit-heartbeat-card {
+  margin-bottom: 12px;
+}
+
+.habit-checkin-page .habit-task-panel {
+  padding: 16px;
+}
+
+.habit-checkin-page .habit-checkin-stack {
+  gap: 12px;
+}
+
+.habit-checkin-page .habit-dailylog-add {
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
 /* ==========================================================================
  * 通用色类：加分 / 扣分 · 让历史记录与其它场景复用
  * ========================================================================== */
