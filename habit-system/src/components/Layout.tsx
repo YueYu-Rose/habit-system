@@ -39,8 +39,8 @@ export function Layout({ children }: { children: ReactNode }) {
         ))}
       </nav>
 
-      <main className="habit-main-content flex-1 w-full p-6 md:p-10 bg-gray-50 overflow-y-auto pb-20 md:ml-64 md:pb-0">
-        <div className="habit-main-content__inner max-w-screen-xl mx-auto space-y-10">
+      <main className="habit-main-content flex-1 w-full bg-gray-50 overflow-y-auto h-full pb-20 md:ml-64 md:pb-0">
+        <div className="habit-main-content__inner max-w-4xl mx-auto w-full px-6 py-8 space-y-10">
           <header className={`habit-header${mode === "PROMOTION" ? " habit-header--promotion" : ""}`}>
             <div className="habit-header__top">
               <div className="habit-header__intro">
