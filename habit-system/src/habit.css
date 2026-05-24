@@ -396,12 +396,12 @@ html:lang(en) .habit-tagline {
 }
 
 .habit-card {
-  background: var(--habit-surface);
-  border: 1px solid var(--habit-border);
-  border-radius: var(--habit-radius);
-  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 12px;
-  box-shadow: var(--habit-shadow-card);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .habit-card__title {
@@ -426,14 +426,17 @@ html:lang(en) .habit-tagline {
 }
 
 .habit-stat-label {
-  color: var(--habit-text-secondary);
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .habit-stat-value {
-  font-weight: 650;
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  color: var(--theme-accent-text);
+  color: #111827;
 }
 
 .habit-stat-value--pos {
@@ -1164,7 +1167,7 @@ html:lang(en) .habit-tagline {
   min-width: 0;
   box-sizing: border-box;
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #f3f4f6;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
@@ -1234,7 +1237,8 @@ html:lang(en) .habit-tagline {
   min-width: 0;
   box-sizing: border-box;
   /* p-4：统一内边距与垂直居中呼吸感 */
-  padding: 16px;
+  padding: 20px 16px;
+  min-height: 80px;
   background: #ffffff;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1461,24 +1465,25 @@ html:lang(en) .habit-tagline {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 24px;
   background: #ffffff;
   border: 1px solid #f3f4f6;
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   margin-bottom: 14px;
 }
 
 .habit-hero-points__value {
   font-weight: 700;
-  font-size: 1.8rem;
-  color: var(--theme-accent-text);
+  font-size: 2.25rem;
+  color: #111827;
   font-variant-numeric: tabular-nums;
 }
 
 .habit-hero-points__label {
-  font-size: 0.78rem;
-  color: var(--habit-text-secondary);
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
   letter-spacing: 0.04em;
 }
 
@@ -3381,7 +3386,7 @@ html:lang(en) .habit-tagline {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 16px 16px 96px;
+  padding: 0;
 }
 
 .habit-bottom-nav {
@@ -3413,10 +3418,6 @@ html:lang(en) .habit-tagline {
   .habit-main-content {
     height: 100vh;
     height: 100dvh;
-  }
-
-  .habit-main-content__inner {
-    padding: 24px;
   }
 
   .habit-bottom-nav {
