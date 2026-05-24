@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAppConfig } from "../config/appConfig";
 import { useLanguage } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 import { HabitThemeSwitcher } from "./HabitThemeSwitcher";
 import { HabitToastHost } from "./HabitToastHost";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -13,7 +14,8 @@ function navActive(pathname: string, to: string): boolean {
 
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { isLoggedIn, logout } = useAuth();
   const { mode } = useAppConfig();
   const nav = [
     { to: "/", label: t("nav.checkin") },
@@ -40,6 +42,11 @@ export function Layout({ children }: { children: ReactNode }) {
                 ))}
               </nav>
               <div className="habit-header__tools">
+                {isLoggedIn ? (
+                  <button type="button" className="habit-top-logout" onClick={logout}>
+                    {lang === "en" ? "Log out" : "退出登录"}
+                  </button>
+                ) : null}
                 <LanguageSwitcher />
                 <HabitThemeSwitcher />
               </div>

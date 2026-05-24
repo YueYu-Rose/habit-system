@@ -3569,6 +3569,26 @@ html:lang(en) .habit-tagline {
   color: var(--theme-accent-text);
 }
 
+.habit-top-logout {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #6b7280;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.habit-top-logout:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 45%, #d1d5db);
+  color: var(--theme-accent-text);
+  background: color-mix(in srgb, var(--theme-primary-soft) 42%, #ffffff);
+}
+
 @media (max-width: 767.98px) {
   .habit-main-content__inner {
     padding: 16px 16px 88px;
