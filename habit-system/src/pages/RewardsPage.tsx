@@ -7,6 +7,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { useAppConfig } from "../config/appConfig";
 import { loadRewardCatalog, nextRewardId, saveRewardCatalog, type RewardCatalogItem } from "../lib/rewardCatalogStorage";
+import { appendRewardRedemption, removeRewardRedemptionById } from "../lib/rewardHistoryStorage";
 import { REMOTE_DATA_EVENT } from "../lib/userDataRemote";
 
 type Reward = RewardCatalogItem;
@@ -132,7 +133,8 @@ export function RewardsPage() {
   }, [lang]);
 
   const showRedeemToast = useCallback(
-    (cost: number) => {
+    (title: string, cost: number) => {
+      const redemption = appendRewardRedemption(title, cost);
       toast({
         title: t("rewards.toast.redeemOk"),
         points: -cost,
@@ -141,6 +143,7 @@ export function RewardsPage() {
         actionLabel: t("rewards.toast.undo"),
         onAction: () => {
           addToLocalPool(cost);
+          removeRewardRedemptionById(redemption.id);
           toast({ title: t("rewards.toast.undone"), points: cost, tone: "positive" });
         },
       });
@@ -148,13 +151,14 @@ export function RewardsPage() {
     [addToLocalPool, t, toast]
   );
 
-  const redeem = async (_id: number, cost: number) => {
+  const redeem = async (id: number, cost: number) => {
     setErr(null);
     const api = bal?.available ?? 0;
     if (getEffectiveAvailable(api) < cost) return;
     if (spendableDelta >= cost) {
       if (trySpendFromLocalPool(cost)) {
-        showRedeemToast(cost);
+        const row = rows.find((x) => x.id === id);
+        if (row) showRedeemToast(row.title, cost);
         load();
       }
       return;
@@ -666,81 +670,79 @@ function AiRewardPlannerSheet({
             </button>
           </div>
           <div className="habit-ai-result-list">
-            {rows.map((item, idx) => (
-              <label key={`${item.tier}-${idx}-${item.title}`} className="habit-ai-result-item">
-                <input
-                  type="checkbox"
-                  checked={selected.has(idx)}
-                  onChange={() => toggleRow(idx)}
-                  style={{ accentColor: "var(--habit-emerald)" }}
-                />
-                <span>
-                  {editingIndex === idx ? (
-                    <div style={{ display: "grid", gap: 8, width: "100%" }}>
-                      <input
-                        className="habit-input-minimal habit-input-minimal--lightbg"
-                        placeholder={copy.titlePlaceholder}
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <strong style={{ fontSize: 13 }}>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong>
+            {rows.map((item, idx) => {
+              const rowId = `habit-ai-reward-row-${idx}`;
+              return (
+                <div key={`${item.tier}-${idx}-${item.title}`} className="habit-ai-result-item">
+                  <input
+                    id={rowId}
+                    type="checkbox"
+                    checked={selected.has(idx)}
+                    onChange={() => toggleRow(idx)}
+                    style={{ accentColor: "var(--habit-emerald)" }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {editingIndex === idx ? (
+                      <div style={{ display: "grid", gap: 8, width: "100%" }}>
                         <input
                           className="habit-input-minimal habit-input-minimal--lightbg"
-                          type="number"
-                          min={1}
-                          step={5}
-                          style={{ maxWidth: 120 }}
-                          value={editPoints}
-                          onChange={(e) => setEditPoints(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
+                          placeholder={copy.titlePlaceholder}
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
                         />
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <strong style={{ fontSize: 13 }}>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong>
+                          <input
+                            className="habit-input-minimal habit-input-minimal--lightbg"
+                            type="number"
+                            min={1}
+                            step={5}
+                            style={{ maxWidth: 120 }}
+                            value={editPoints}
+                            onChange={(e) => setEditPoints(e.target.value)}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button type="button" className="habit-btn" onClick={saveEdit}>
+                            {copy.saveEdit}
+                          </button>
+                          <button type="button" className="habit-btn habit-btn--ghost" onClick={cancelEdit}>
+                            {copy.cancelEdit}
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button type="button" className="habit-btn" onClick={saveEdit}>
-                          {copy.saveEdit}
-                        </button>
-                        <button type="button" className="habit-btn habit-btn--ghost" onClick={cancelEdit}>
-                          {copy.cancelEdit}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <strong>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong> {item.title}
-                      {lang === "en" ? ` (${item.points} pts)` : `（${item.points}分）`}
-                    </>
-                  )}
-                </span>
-                {manageMode && editingIndex !== idx ? (
-                  <button
-                    type="button"
-                    className="habit-reward-edit"
-                    style={{ marginLeft: 8, marginTop: 2 }}
-                    aria-label={`${copy.edit} ${item.title}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      beginEdit(idx);
-                    }}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      aria-hidden
+                    ) : (
+                      <label htmlFor={rowId} style={{ cursor: "pointer" }}>
+                        <strong>{tierStringForLang(tierIdFromLabel(item.tier), lang)}</strong> {item.title}
+                        {lang === "en" ? ` (${item.points} pts)` : `（${item.points}分）`}
+                      </label>
+                    )}
+                  </div>
+                  {manageMode && editingIndex !== idx ? (
+                    <button
+                      type="button"
+                      className="habit-reward-edit"
+                      style={{ marginLeft: 8, marginTop: 2 }}
+                      aria-label={`${copy.edit} ${item.title}`}
+                      onClick={() => beginEdit(idx)}
                     >
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                    </svg>
-                  </button>
-                ) : null}
-              </label>
-            ))}
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
           {err ? <p className="habit-error">{err}</p> : null}
           <div className="habit-ai-result-actions">

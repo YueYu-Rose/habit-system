@@ -6,13 +6,18 @@ function resolveMode(): AppMode {
 }
 
 const mode = resolveMode();
-const hideLogin =
-  String(import.meta.env.VITE_HIDE_LOGIN ?? "")
+function readBoolEnv(name: string): boolean {
+  const v = String(import.meta.env[name] ?? "")
     .trim()
-    .toLowerCase() === "1" ||
-  String(import.meta.env.VITE_HIDE_LOGIN ?? "")
-    .trim()
-    .toLowerCase() === "true";
+    .toLowerCase();
+  return v === "1" || v === "true";
+}
+
+const hideLogin = readBoolEnv("VITE_HIDE_LOGIN");
+const demoEmail = String(import.meta.env.VITE_DEMO_EMAIL ?? "").trim();
+const demoPassword = String(import.meta.env.VITE_DEMO_PASSWORD ?? "");
+const enableDemoLogin =
+  readBoolEnv("VITE_ENABLE_DEMO_LOGIN") && demoEmail.length > 0 && demoPassword.length > 0;
 
 export const appConfig = {
   mode,
@@ -20,6 +25,9 @@ export const appConfig = {
   showAuth: !hideLogin,
   showAI: mode === "PERSONAL",
   showExternalIntegration: mode === "PERSONAL",
+  enableDemoLogin,
+  demoEmail,
+  demoPassword,
   /** 公网轻量变体可仅依赖本机存储；打卡/习惯/奖励走 LocalStorage，不强制接私有后端 */
   isPromotionOffline: mode === "PROMOTION",
 } as const;

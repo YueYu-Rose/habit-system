@@ -200,7 +200,6 @@ export function HomePage() {
   const { catalog, removeHabit, addHabit, updateHabit, toggleLocalHabit, markHeartbeat, reload: reloadCatalog } =
     useHabitCatalog();
 
-  const [busy] = useState<string | null>(null);
   const [extErr, setExtErr] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [newSheet, setNewSheet] = useState(false);
@@ -527,7 +526,6 @@ export function HomePage() {
             const done0 = getDone(def, daily, catalog, day);
             const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
             const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
-            const bKey = def.systemKey ?? def.id;
 
             return (
               <li key={def.id} className="habit-dailylog-wrap">
@@ -542,7 +540,7 @@ export function HomePage() {
                   done={done0}
                   pointsText={text}
                   pointsClassName={cls}
-                  busy={def.systemKey ? busy === bKey : false}
+                  busy={false}
                   isEditing={isEditing}
                   onToggle={() => onRowToggle(def)}
                   onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}
@@ -575,7 +573,6 @@ export function HomePage() {
                 const done0 = getDone(def, daily, catalog, day);
                 const effectivePts = Math.round(getPointsForHabitComplete(def) * decayRate);
                 const { text, cls } = getPointsDisplay(def, done0, t, effectivePts, backfillDays);
-                const bKey = def.systemKey ?? def.id;
                 return (
                   <li key={def.id} className="habit-dailylog-wrap">
                     <CheckinRow
@@ -589,7 +586,7 @@ export function HomePage() {
                       done={done0}
                       pointsText={text}
                       pointsClassName={cls}
-                      busy={def.systemKey ? busy === bKey : false}
+                      busy={false}
                       isEditing={isEditing}
                       onToggle={() => onRowToggle(def)}
                       onEdit={isEditing && !def.systemKey ? () => { setEditingHabit(def); setNewSheet(true); } : undefined}

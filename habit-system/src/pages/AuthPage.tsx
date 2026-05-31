@@ -4,6 +4,7 @@ import { formatAuthErrorForUi, useAuth } from "../context/AuthContext";
 import { useHabitToast } from "../context/HabitToastContext";
 import { useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { useAppConfig } from "../config/appConfig";
 import { isSupabaseConfigured } from "../lib/supabase";
 
 const OTP_COOLDOWN_SEC = 60;
@@ -15,6 +16,7 @@ export function AuthPage() {
   const { loginWithPassword, sendRegisterOtp, registerWithOtpAndPassword } = useAuth();
   const { toast } = useHabitToast();
   const { t } = useLanguage();
+  const { enableDemoLogin, demoEmail, demoPassword } = useAppConfig();
   const [mode, setMode] = useState<TabMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,9 +25,6 @@ export function AuthPage() {
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
-
-  const DEMO_EMAIL = "18816280128@163.com";
-  const DEMO_PASSWORD = "123456";
 
   useEffect(() => {
     if (cooldown === 0) return;
@@ -107,14 +106,15 @@ export function AuthPage() {
   };
 
   const onDemoLogin = async () => {
+    if (!enableDemoLogin) return;
     if (busy || demoBusy) return;
     setMode("login");
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
+    setEmail(demoEmail);
+    setPassword(demoPassword);
     resetRegisterFlow();
     setDemoBusy(true);
     try {
-      const r = await loginWithPassword(DEMO_EMAIL, DEMO_PASSWORD);
+      const r = await loginWithPassword(demoEmail, demoPassword);
       if (!r.ok) {
         toast({ title: formatAuthErrorForUi(r, t), tone: "negative" });
         return;
@@ -186,6 +186,12 @@ export function AuthPage() {
               placeholder={t("auth.ph.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void onLoginSubmit();
+                }
+              }}
             />
 
             <button
@@ -196,17 +202,21 @@ export function AuthPage() {
             >
               {t("auth.submit")}
             </button>
-            <div className="habit-auth-divider" role="separator" aria-label="or">
-              <span>--- 或者 ---</span>
-            </div>
-            <button
-              type="button"
-              className="habit-auth-demo-btn"
-              disabled={busy || demoBusy}
-              onClick={() => void onDemoLogin()}
-            >
-              {demoBusy ? "正在进入演示系统..." : "👋 访客 / 面试官一键体验 (Demo Account)"}
-            </button>
+            {enableDemoLogin ? (
+              <>
+                <div className="habit-auth-divider" role="separator" aria-label={t("auth.demo.or")}>
+                  <span>{t("auth.demo.or")}</span>
+                </div>
+                <button
+                  type="button"
+                  className="habit-auth-demo-btn"
+                  disabled={busy || demoBusy}
+                  onClick={() => void onDemoLogin()}
+                >
+                  {demoBusy ? t("auth.demo.loading") : t("auth.demo.entry")}
+                </button>
+              </>
+            ) : null}
           </div>
         ) : (
           <div className="habit-auth-stack habit-auth-stack--air">
@@ -265,6 +275,12 @@ export function AuthPage() {
               placeholder={t("auth.ph.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void onRegisterSubmit();
+                }
+              }}
             />
 
             <button
