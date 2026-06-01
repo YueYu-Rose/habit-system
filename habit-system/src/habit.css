@@ -1545,6 +1545,14 @@ html:lang(en) .habit-tagline {
   margin: 10px 0 12px;
 }
 
+.habit-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .habit-section-action-btn {
   border: 1px solid #e5e7eb;
   background: #ffffff;
@@ -1563,6 +1571,58 @@ html:lang(en) .habit-tagline {
   border-color: color-mix(in srgb, var(--theme-primary) 45%, #d1d5db);
   color: var(--theme-accent-text);
   background: color-mix(in srgb, var(--theme-primary-soft) 42%, #ffffff);
+}
+
+.habit-demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.84rem;
+}
+
+.habit-demo-banner strong {
+  font-weight: 700;
+}
+
+.habit-records-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.habit-records-overview__card {
+  padding: 14px 16px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.habit-records-overview__label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.habit-records-overview__value {
+  font-size: 1.45rem;
+  line-height: 1.1;
+  color: #111827;
+  font-weight: 750;
+}
+
+@media (max-width: 480px) {
+  .habit-records-overview {
+    grid-template-columns: 1fr;
+  }
 }
 
 .habit-task-panel {

@@ -100,6 +100,7 @@ export function RewardsPage() {
   const [editing, setEditing] = useState<Reward | null>(null);
   const [createSelectionOpen, setCreateSelectionOpen] = useState(false);
   const [aiPlannerOpen, setAiPlannerOpen] = useState(false);
+  const [expandedTierIds, setExpandedTierIds] = useState<Record<string, boolean>>({});
 
   const persistRows = useCallback((next: Reward[]) => {
     setRows(next);
@@ -247,6 +248,10 @@ export function RewardsPage() {
 
   const byTier = (tier: (typeof REWARD_TIERS)[number]) => rows.filter((r) => rowInTier(r, tier));
 
+  const toggleTierExpand = (tierId: string) => {
+    setExpandedTierIds((prev) => ({ ...prev, [tierId]: !prev[tierId] }));
+  };
+
   const importAiRewards = (items: GeneratedReward[]) => {
     const clean = items
       .map((it) => ({
@@ -288,8 +293,30 @@ export function RewardsPage() {
 
       {REWARD_TIERS.map((tier) => (
         <div key={tier.match}>
-          <h2 className="habit-section-title">{t(tier.titleKey)}</h2>
-          {byTier(tier).map((rw) => {
+          {(() => {
+            const tierRows = byTier(tier);
+            const expanded = Boolean(expandedTierIds[tier.id]);
+            const visibleRows = expanded ? tierRows : tierRows.slice(0, 3);
+            const hiddenCount = Math.max(0, tierRows.length - visibleRows.length);
+            return (
+              <>
+                <div className="habit-section-head">
+                  <h2 className="habit-section-title" style={{ marginBottom: 0 }}>
+                    {t(tier.titleKey)}
+                  </h2>
+                  {tierRows.length > 3 ? (
+                    <button
+                      type="button"
+                      className="habit-section-action-btn"
+                      onClick={() => toggleTierExpand(tier.id)}
+                    >
+                      {expanded
+                        ? t("rewards.tier.collapse")
+                        : t("rewards.tier.expand", { n: hiddenCount })}
+                    </button>
+                  ) : null}
+                </div>
+                {visibleRows.map((rw) => {
             const api = bal?.available ?? 0;
             const canRedeem = Boolean(
               bal &&
@@ -301,12 +328,12 @@ export function RewardsPage() {
             const progress = rw.cost_points > 0 ? Math.min(100, Math.round((effective / rw.cost_points) * 100)) : 0;
             const encouragementKey =
               progress <= 0 ? null : progress < 60 ? "rewards.encourage.onRoad" : "rewards.encourage.keepGoing";
-            return (
-              <div
-                key={rw.id}
-                className="habit-row-card"
-                style={{ padding: 16, marginBottom: 10 }}
-              >
+                  return (
+                    <div
+                      key={rw.id}
+                      className="habit-row-card"
+                      style={{ padding: 16, marginBottom: 10 }}
+                    >
                 <div className="habit-reward-row-head">
                   <span className="habit-reward-title" style={{ paddingRight: 8 }}>
                     {rw.title}
@@ -359,14 +386,17 @@ export function RewardsPage() {
                     </div>
                   </>
                 ) : null}
-              </div>
-            );
-          })}
-          {byTier(tier).length === 0 ? (
+                    </div>
+                  );
+                })}
+                {tierRows.length === 0 ? (
             <p className="habit-muted" style={{ marginTop: 6, marginBottom: 10 }}>
               {t("rewards.tier.empty")}
             </p>
-          ) : null}
+                ) : null}
+              </>
+            );
+          })()}
         </div>
       ))}
 

@@ -99,6 +99,12 @@ export default function App() {
           </button>
         </div>
       ) : null}
+      {!showAuth ? (
+        <div className="habit-demo-banner" role="note">
+          <strong>{t("app.demoMode.title")}</strong>
+          <span>{t("app.demoMode.body")}</span>
+        </div>
+      ) : null}
       {isPromotionOffline ? <PromotionLocaleSync /> : null}
       <Routes>
         {/* 首页 = 打卡页 */}

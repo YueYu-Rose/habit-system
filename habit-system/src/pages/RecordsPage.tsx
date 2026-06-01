@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useHabitToast } from "../context/HabitToastContext";
 import { useLanguage } from "../context/LanguageContext";
 import { todayIsoLocal } from "../lib/dateLocal";
@@ -47,6 +48,16 @@ export function RecordsPage() {
   return (
     <>
       <p className="habit-muted habit-page-lead">{t("records.lead")}</p>
+      <div className="habit-records-overview">
+        <div className="habit-row-card habit-records-overview__card">
+          <span className="habit-records-overview__label">{t("records.summary.redemptions")}</span>
+          <strong className="habit-records-overview__value">{redemptions.length}</strong>
+        </div>
+        <div className="habit-row-card habit-records-overview__card">
+          <span className="habit-records-overview__label">{t("records.summary.daily")}</span>
+          <strong className="habit-records-overview__value">{dailyCloseRows.length}</strong>
+        </div>
+      </div>
 
       <h2 className="habit-section-title">{t("records.redemptions")}</h2>
       <div className="habit-wallet-sheet">
@@ -71,9 +82,12 @@ export function RecordsPage() {
           ))}
         </ul>
         {redemptions.length === 0 ? (
-          <p className="habit-muted" style={{ padding: "0 12px 12px" }}>
-            {t("records.redemptions.empty")}
-          </p>
+          <div style={{ padding: "0 12px 12px" }}>
+            <p className="habit-muted">{t("records.redemptions.empty")}</p>
+            <Link to="/rewards" className="habit-link-btn habit-btn habit-btn--secondary">
+              {t("records.redemptions.cta")}
+            </Link>
+          </div>
         ) : null}
       </div>
 
@@ -110,9 +124,12 @@ export function RecordsPage() {
           ))}
         </ul>
         {dailyCloseRows.length === 0 ? (
-          <p className="habit-muted" style={{ padding: "0 12px 12px" }}>
-            {t("records.daily.empty")}
-          </p>
+          <div style={{ padding: "0 12px 12px" }}>
+            <p className="habit-muted">{t("records.daily.empty")}</p>
+            <Link to="/" className="habit-link-btn habit-btn habit-btn--secondary">
+              {t("records.daily.cta")}
+            </Link>
+          </div>
         ) : null}
       </div>
 

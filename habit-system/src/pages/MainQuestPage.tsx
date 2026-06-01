@@ -1,4 +1,5 @@
 import { MainlineProgressHistory } from "../components/MainlineProgressHistory";
+import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useMainlineLoop } from "../context/MainlineLoopContext";
 import { MainlineTaskCard } from "../components/MainlineTaskCard";
@@ -26,6 +27,9 @@ export function MainQuestPage() {
           {state.archived.length === 0 ? (
             <li className="habit-milestone-empty habit-milestone-empty--center">
               {t("main.honor.empty")}
+              <Link to="/" className="habit-link-btn habit-btn habit-btn--secondary">
+                {t("main.honor.emptyCta")}
+              </Link>
             </li>
           ) : (
             state.archived.map((a) => (
